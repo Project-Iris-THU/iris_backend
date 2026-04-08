@@ -1,3 +1,4 @@
+use log::info;
 use crate::config::data::{ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig, TlsConfig};
 use rust_yaml::{Value, Yaml};
 
@@ -5,6 +6,7 @@ pub fn load_config_file<'config_data>(
     file_path: &str,
     config_data: &'config_data mut ConfigData,
 ) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
+    info!("Starting to load config file:");
     let yaml = Yaml::new();
     let reader = match std::fs::File::open(file_path) {
         Ok(file) => file,
@@ -162,7 +164,7 @@ pub fn load_config_file<'config_data>(
         None => Err("TTS Config not found in config file")?,
     };
 
-
+    info!("Config file loaded successfully");
     Ok(config_data)
 }
 
