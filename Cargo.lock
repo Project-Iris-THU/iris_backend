@@ -887,6 +887,7 @@ dependencies = [
  "ollama-rs",
  "openai_api_rust",
  "rust-yaml",
+ "serde_json",
 ]
 
 [[package]]
