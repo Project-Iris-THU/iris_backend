@@ -1,0 +1,36 @@
+host:
+port:
+
+tls:
+  enabled: false
+  fullchain_path: ""
+  key_path: ""
+
+ml_engines:
+  - name: my-openai
+    type: openai
+    url: https://api.openai.com/v1/
+    api_key: ""
+  - name: my-ollama
+    type: ollama
+    url: http://localhost:11434/
+    api_key: ""
+
+pipeline_configs:
+  stt:
+    model: whisper-large-v3-turbo
+    engine_name: my-openai
+    enabled: true
+  ocr:
+    model: deepseek-ocr
+    engine_name: my-ollama
+    enabled: false
+  llm:
+    model: "qwen3-vl:8b"
+    engine_name:
+    vision_model: true
+    enabled: true
+  tts:
+    model: "qwen3-tts"
+    engine_name:
+    enabled: true
