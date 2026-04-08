@@ -1,4 +1,4 @@
-use crate::config::data::{ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig};
+use crate::config::data::{ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig, TlsConfig};
 use rust_yaml::{Value, Yaml};
 
 pub fn load_config_file<'config_data>(
@@ -24,6 +24,28 @@ pub fn load_config_file<'config_data>(
     match parsed_data.get_str("port") {
         Some(port) => config_data.port = port.to_string().parse::<u16>()?,
         None => Err("Port not found in config file")?,
+    }
+
+    match parsed_data.get_str("tls") {
+        Some(tls_config) => {
+            let enabled = match tls_config.get_str("enabled") {
+                Some(enabled) => enabled.to_string().parse::<bool>()?,
+                None => Err("TLS Enabled not found in config file")?,
+            };
+
+            let cert_path = match tls_config.get_str("cert_path") {
+                Some(cert_path) => cert_path.to_string(),
+                None => Err("TLS Cert Path not found in config file")?,
+            };
+
+            let key_path = match tls_config.get_str("key_path") {
+                Some(key_path) => key_path.to_string(),
+                None => Err("TLS Key Path not found in config file")?,
+            };
+
+            config_data.tls = TlsConfig { enabled, cert_path, key_path };
+        },
+        None => Err("TLS Config not found in config file")?,
     }
 
     match parsed_data.get_str("ml_engines") {
