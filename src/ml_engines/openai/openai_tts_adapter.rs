@@ -1,9 +1,5 @@
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
 
-pub struct OpenAiTtsAdapter {
-    
-}
+pub struct OpenAiTtsAdapter {}
 
-impl TtsInterface for OpenAiTtsAdapter {
-    
-}
+impl TtsInterface for OpenAiTtsAdapter {}

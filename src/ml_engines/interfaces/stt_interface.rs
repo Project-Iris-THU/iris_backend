@@ -1,3 +1,1 @@
-pub trait SttInterface {
-
-}
+pub trait SttInterface {}

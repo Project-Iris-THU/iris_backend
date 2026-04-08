@@ -1,9 +1,5 @@
 use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
 
-struct OllamaOcrAdapter {
+struct OllamaOcrAdapter {}
 
-}
-
-impl OcrInterface for OllamaOcrAdapter {
-
-}
+impl OcrInterface for OllamaOcrAdapter {}

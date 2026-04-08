@@ -1,3 +1,1 @@
-pub trait OcrInterface {
-    
-}
+pub trait OcrInterface {}
