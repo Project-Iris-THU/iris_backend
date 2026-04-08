@@ -884,6 +884,7 @@ name = "iris_backend"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "log",
  "ollama-rs",
  "openai_api_rust",
  "rust-yaml",
