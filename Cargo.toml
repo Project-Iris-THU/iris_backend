@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 actix-web = "4.13.0"
 ollama-rs = "0.3.4"
+openai_api_rust = "0.1.9"
 rust-yaml = "0.0.5"
