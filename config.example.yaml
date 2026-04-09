@@ -3,7 +3,7 @@ port:
 
 tls:
   enabled: false
-  fullchain_path: ""
+  cert_path: ""
   key_path: ""
 
 ml_engines:
@@ -27,10 +27,10 @@ pipeline_configs:
     enabled: false
   llm:
     model: "qwen3-vl:8b"
-    engine_name:
+    engine_name: my-ollama
     vision_model: true
     enabled: true
   tts:
     model: "qwen3-tts"
-    engine_name:
+    engine_name: my-openai
     enabled: true
