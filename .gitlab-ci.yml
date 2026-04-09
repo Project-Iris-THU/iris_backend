@@ -1,0 +1,50 @@
+stages:
+  - check
+  - build
+  - test
+
+.rust-default:
+  image: rust:latest
+  cache:
+    - key: $CI_COMMIT_REF
+      paths: [ target/ ]
+    - key: cargo
+      paths: [ cargo/ ]
+  interruptible: true
+  timeout: 30m
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/cargo
+    CACHE_FALLBACK_KEY: $CI_DEFAULT_BRANCH
+  before_script:
+    - rustup --version && rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
+
+
+check_format:
+  extends: .rust-default
+  stage: check
+  script:
+    - cargo fmt --check
+
+build:
+  extends: .rust-default
+  stage: build
+  script:
+    - cargo +stable build --verbose --color always --release
+  artifacts:
+    paths:
+      - target/release/iris_backend
+
+test:
+  stage: test
+  needs: [ build ]
+  script:
+    - 'cargo +nightly test 
+      --verbose 
+      --color always 
+      -- 
+      -Z unstable-options 
+      --format junit > report.xml'
+  artifacts:
+    when: always
+    reports:
+      junit: results.xml
