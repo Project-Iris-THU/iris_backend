@@ -19,7 +19,7 @@ enum EngineType {
     Ollama(Arc<Ollama>),
     OpenAI(Arc<OpenAI>),
 }
-fn create_interfaces(
+pub fn create_interfaces(
     config_data: &ConfigData,
 ) -> Result<InterfaceConfig, Box<dyn std::error::Error>> {
     let used_engine_names = vec![
