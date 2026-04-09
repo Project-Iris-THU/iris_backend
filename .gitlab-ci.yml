@@ -47,7 +47,7 @@ test:
       --color always 
       -- 
       -Z unstable-options 
-      --format junit > report.xml'
+      --format junit > results.xml'
   artifacts:
     when: always
     reports:
