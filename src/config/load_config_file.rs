@@ -277,7 +277,7 @@ fn parse_ml_engine<'config_data>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::data::{create_default_config_data, MLEngineType};
+    use crate::config::data::{MLEngineType, create_default_config_data};
 
     #[test]
     fn test_load_correct_config_file() -> Result<(), Box<dyn std::error::Error>> {

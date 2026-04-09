@@ -1,3 +1,1 @@
-pub trait LlmInterface {
-    
-}
+pub trait LlmInterface {}
