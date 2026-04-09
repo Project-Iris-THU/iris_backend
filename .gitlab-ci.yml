@@ -5,6 +5,9 @@ stages:
 
 .rust-default:
   image: rust:latest
+  tags:
+    - linux
+    - docker
   cache:
     - key: $CI_COMMIT_REF
       paths: [ target/ ]
