@@ -2,66 +2,68 @@ use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
 use crate::ml_engines::interfaces::stt_interface::SttInterface;
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
-use std::iter::Map;
+use std::collections::HashMap;
 
 pub struct TlsConfig {
-    enabled: bool,
-    fullchain_path: String,
-    key_path: String,
+    pub enabled: bool,
+    pub cert_path: String,
+    pub key_path: String,
 }
 
+#[derive(Clone)]
 pub enum MLEngineType {
     OpenAI,
     Ollama,
 }
 
 pub struct MLEngineConfig {
-    engine_type: MLEngineType,
-    url: String,
-    api_key: String,
+    pub engine_type: MLEngineType,
+    pub url: String,
+    pub api_key: String,
 }
 
 pub struct SttConfig {
-    model: String,
-    engine_name: String,
-    enabled: bool,
+    pub model: String,
+    pub engine_name: String,
+    pub enabled: bool,
 }
 
 pub struct OcrConfig {
-    model: String,
-    engine_name: String,
-    enabled: bool,
+    pub model: String,
+    pub engine_name: String,
+    pub enabled: bool,
 }
 
 pub struct LlmConfig {
-    model: String,
-    engine_name: String,
-    vision_model: bool,
-    enabled: bool,
+    pub model: String,
+    pub engine_name: String,
+    pub vision_model: bool,
+    pub enabled: bool,
 }
 
 pub struct TtsConfig {
-    model: String,
-    engine_name: String,
-    enabled: bool,
+    pub model: String,
+    pub engine_name: String,
+    pub enabled: bool,
 }
 
-pub struct PipelineConfig {
-    stt: SttConfig,
-    ocr: OcrConfig,
-    llm: LlmConfig,
-    tts: TtsConfig,
+pub struct PipelineConfigs {
+    pub stt: SttConfig,
+    pub ocr: OcrConfig,
+    pub llm: LlmConfig,
+    pub tts: TtsConfig,
 }
 pub struct ConfigData {
-    host: String,
-    port: u16,
-    tls: TlsConfig,
-    ml_engines: Map<String, MLEngineConfig>,
+    pub host: String,
+    pub port: u16,
+    pub tls: TlsConfig,
+    pub ml_engines: HashMap<String, MLEngineConfig>,
+    pub pipeline_configs: PipelineConfigs,
 }
 
 pub struct InterfaceConfig {
-    stt_interface: Box<dyn SttInterface>,
-    ocr_interface: Box<dyn OcrInterface>,
-    llm_interface: Box<dyn LlmInterface>,
-    tts_interface: Box<dyn TtsInterface>,
+    pub stt_interface: Box<dyn SttInterface>,
+    pub ocr_interface: Box<dyn OcrInterface>,
+    pub llm_interface: Box<dyn LlmInterface>,
+    pub tts_interface: Box<dyn TtsInterface>,
 }
