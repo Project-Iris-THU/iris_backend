@@ -39,6 +39,7 @@ build:
       - target/release/iris_backend
 
 test:
+  extends: .rust-default
   stage: test
   needs: [ build ]
   script:
