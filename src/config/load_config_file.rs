@@ -115,12 +115,12 @@ pub fn load_config_file<'config_data>(
         Some(llm_config) => {
             let model = match llm_config.get_str("model") {
                 Some(model) => model.to_string(),
-                None => Err("STT Model not found in config file")?,
+                None => Err("LLM Model not found in config file")?,
             };
 
             let engine_name = match llm_config.get_str("engine_name") {
                 Some(engine_name) => engine_name.to_string(),
-                None => Err("STT Engine Name not found in config file")?,
+                None => Err("LLM Engine Name not found in config file")?,
             };
 
             let vision_model = match llm_config.get_str("vision_model") {
