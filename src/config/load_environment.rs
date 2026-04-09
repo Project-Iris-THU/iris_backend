@@ -9,103 +9,110 @@ pub fn load_environment<'config_data>(
 
     match env::var("IRIS_HOST") {
         Ok(host) => config_data.host = host,
-        Err(e) => debug!("Host not found in environment variables"),
+        Err(e) => debug!("Host not found in environment variables: {}", e),
     };
 
     match env::var("PORT") {
         Ok(port) => config_data.port = port.parse::<u16>()?,
-        Err(e) => debug!("Port not found in config file"),
+        Err(e) => debug!("Port not found in environment variables: {}", e),
     }
 
 
     match env::var("IRIS_TLS_ENABLED") {
         Ok(enabled) => config_data.tls.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("TLS Enabled not found in environment variables"),
+        Err(e) => debug!("TLS Enabled not found in environment variables: {}", e),
     };
 
     match env::var("IRIS_TLS_CERT_FILE") {
         Ok(cert_path) => config_data.tls.cert_path = cert_path,
-        Err(e) => debug!("TLS Cert Path not found in config file"),
+        Err(e) => debug!("TLS Cert Path not found in environment variables: {}", e),
     };
 
     match env::var("IRIS_TLS_KEY_FILE") {
         Ok(key_path) => config_data.tls.key_path = key_path,
-        Err(e) => debug!("TLS Key Path not found in config file"),
+        Err(e) => debug!("TLS Key Path not found in environment variables: {}", e),
     };
 
     let ml_engine_count = match env::var("IRIS_ML_ENGINES_COUNT") {
         Ok(ml_engines_count) => ml_engines_count.parse::<usize>()?,
-        Err(e) => Err("ML Engines Count not found in environment variables")?,
+        Err(e) => {
+            debug!("ML Engines Count not found in environment variables: {}", e);
+            0
+        },
     };
 
     for engine in 0..ml_engine_count {
         parse_ml_engine(engine, config_data)?;
     }
 
-    //TODO: Change this to use the environement variables
-    let model = match stt_config.get_str("model") {
-        Some(model) => model.to_string(),
-        None => Err("STT Model not found in config file")?,
+    // STT pipeline configs
+    match env::var("IRIS_PIPELINE_STT_MODEL") {
+        Ok(model) => config_data.pipeline_configs.stt.model = model,
+        Err(e) => debug!("STT Model not found in environment variables: {}", e),
     };
 
-    let engine_name = match stt_config.get_str("engine_name") {
-        Some(engine_name) => engine_name.to_string(),
-        None => Err("STT Engine Name not found in config file")?,
+    match env::var("IRIS_PIPELINE_STT_ENGINE_NAME") {
+        Ok(engine_name) => config_data.pipeline_configs.stt.engine_name = engine_name,
+        Err(e) => debug!("STT Engine Name not found in environment variables: {}", e),
     };
 
-    let enabled = match stt_config.get_str("enabled") {
-        Some(enabled) => enabled.to_string().parse::<bool>()?,
-        None => Err("STT Enabled not found in config file")?,
+    match env::var("IRIS_PIPELINE_STT_ENGINE_ENABLED") {
+        Ok(enabled) => config_data.pipeline_configs.stt.enabled = enabled.parse::<bool>()?,
+        Err(e) => debug!("STT Enabled not found in environment variables: {}", e),
     };
 
-    let model = match ocr_config.get_str("model") {
-        Some(model) => model.to_string(),
-        None => Err("OCR Model not found in config file")?,
+    // OCR pipeline configs
+    match env::var("IRIS_PIPELINE_OCR_MODEL") {
+        Ok(model) => config_data.pipeline_configs.ocr.model = model,
+        Err(e) => debug!("OCR Model not found in environment variables: {}", e),
     };
 
-    let engine_name = match ocr_config.get_str("engine_name") {
-        Some(engine_name) => engine_name.to_string(),
-        None => Err("OCR Engine Name not found in config file")?,
+    match env::var("IRIS_PIPELINE_OCR_ENGINE_NAME") {
+        Ok(engine_name) => config_data.pipeline_configs.ocr.engine_name = engine_name,
+        Err(e) => debug!("OCR Engine Name not found in environment variables: {}", e),
     };
 
-    let enabled = match ocr_config.get_str("enabled") {
-        Some(enabled) => enabled.to_string().parse::<bool>()?,
-        None => Err("OCR Enabled not found in config file")?,
+    match env::var("IRIS_PIPELINE_OCR_ENGINE_ENABLED") {
+        Ok(enabled) => config_data.pipeline_configs.ocr.enabled = enabled.parse::<bool>()?,
+        Err(e) => debug!("OCR Enabled not found in environment variables: {}", e),
     };
 
-    let model = match llm_config.get_str("model") {
-        Some(model) => model.to_string(),
-        None => Err("STT Model not found in config file")?,
+    // LLM pipeline configs
+    match env::var("IRIS_PIPELINE_LLM_MODEL") {
+        Ok(model) => config_data.pipeline_configs.llm.model = model,
+        Err(e) => debug!("LLM Model not found in environment variables: {}", e),
     };
 
-    let engine_name = match llm_config.get_str("engine_name") {
-        Some(engine_name) => engine_name.to_string(),
-        None => Err("STT Engine Name not found in config file")?,
+    match env::var("IRIS_PIPELINE_LLM_ENGINE_NAME") {
+        Ok(engine_name) => config_data.pipeline_configs.llm.engine_name = engine_name,
+        Err(e) => debug!("LLM Engine Name not found in environment variables: {}", e),
     };
 
-    let vision_model = match llm_config.get_str("vision_model") {
-        Some(vision_model) => vision_model.to_string().parse::<bool>()?,
-        None => Err("LLM vision model not found in config file")?,
+    match env::var("IRIS_PIPELINE_LLM_VISION_VISION_MODEL") {
+        Ok(vision_model) => config_data.pipeline_configs.llm.vision_model =
+            vision_model.parse::<bool>()?,
+        Err(e) => debug!("LLM vision model not found in environment variables: {}", e),
     };
 
-    let enabled = match llm_config.get_str("enabled") {
-        Some(enabled) => enabled.to_string().parse::<bool>()?,
-        None => Err("LLM Enabled not found in config file")?,
+    match env::var("IRIS_PIPELINE_LLM_ENGINE_ENABLED") {
+        Ok(enabled) => config_data.pipeline_configs.llm.enabled = enabled.parse::<bool>()?,
+        Err(e) => debug!("LLM Enabled not found in environment variables: {}", e),
     };
 
-    let model = match tts_config.get_str("model") {
-        Some(model) => model.to_string(),
-        None => Err("TTS Model not found in config file")?,
+    // TTS pipeline configs
+    match env::var("IRIS_PIPELINE_TTS_MODEL") {
+        Ok(model) => config_data.pipeline_configs.tts.model = model,
+        Err(e) => debug!("TTS Model not found in environment variables: {}", e),
     };
 
-    let engine_name = match tts_config.get_str("engine_name") {
-        Some(engine_name) => engine_name.to_string(),
-        None => Err("TTS Engine Name not found in config file")?,
+    match env::var("IRIS_PIPELINE_TTS_ENGINE_NAME") {
+        Ok(engine_name) => config_data.pipeline_configs.tts.engine_name = engine_name,
+        Err(e) => debug!("TTS Engine Name not found in environment variables: {}", e),
     };
 
-    let enabled = match tts_config.get_str("enabled") {
-        Some(enabled) => enabled.to_string().parse::<bool>()?,
-        None => Err("TTS Enabled not found in config file")?,
+    match env::var("IRIS_PIPELINE_TTS_ENGINE_ENABLED") {
+        Ok(enabled) => config_data.pipeline_configs.tts.enabled = enabled.parse::<bool>()?,
+        Err(e) => debug!("TTS Enabled not found in environment variables: {}", e),
     };
 
 
@@ -120,7 +127,7 @@ fn parse_ml_engine<'config_data>(
         Ok(name) => name,
         Err(e) => {
             let message =
-                format!("ML Engine {} name not found in environment variables", engine_id);
+                format!("ML Engine {} name not found in environment variables: {}", engine_id, e);
             debug!("{}", message);
             Err(message)?
         },
@@ -148,7 +155,7 @@ fn parse_ml_engine<'config_data>(
         },
         Err(e) => {
             let message =
-                format!("ML Engine {} type not found in environment variables", engine_id);
+                format!("ML Engine {} type not found in environment variables: {}", engine_id, e);
             debug!("{}", message);
             if engine_config_creation_necessary {
                 Err(message)?
@@ -166,7 +173,7 @@ fn parse_ml_engine<'config_data>(
         },
         Err(e) => {
             let message =
-                format!("ML Engine {} url not found in environment variables", engine_id);
+                format!("ML Engine {} url not found in environment variables: {}", engine_id, e);
             debug!("{}", message);
             if engine_config_creation_necessary {
                 Err(message)?
@@ -185,7 +192,7 @@ fn parse_ml_engine<'config_data>(
         },
         Err(e) => {
             let message =
-                format!("ML Engine {} api key not found in environment variables", engine_id);
+                format!("ML Engine {} api key not found in environment variables: {}", engine_id, e);
             debug!("{}", message);
             if engine_config_creation_necessary {
                 Err(message)?
