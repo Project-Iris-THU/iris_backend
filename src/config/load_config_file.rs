@@ -1,9 +1,9 @@
-use std::io::Read;
 use crate::config::data::{
-    ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig, TtsConfig, TlsConfig,
+    ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig, TlsConfig, TtsConfig,
 };
 use log::info;
 use rust_yaml::{Value, Yaml};
+use std::io::Read;
 
 pub fn load_config_file<'config_data, R: Read>(
     reader: R,
@@ -18,10 +18,12 @@ pub fn load_config_file<'config_data, R: Read>(
     };
 
     match parsed_data.get_str("host") {
-        Some(host) => config_data.host = match host.as_str() {
-            Some(host) => host.to_string(),
-            None => Err("Host is not a string")?,
-        },
+        Some(host) => {
+            config_data.host = match host.as_str() {
+                Some(host) => host.to_string(),
+                None => Err("Host is not a string")?,
+            }
+        }
         None => Err("Host not found in config file")?,
     };
 
