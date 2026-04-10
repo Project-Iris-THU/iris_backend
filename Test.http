@@ -1,0 +1,17 @@
+WEBSOCKET ws://localhost:8080/ws
+
+===
+{
+  "message": "Hello, server!",
+  "repeat": 3
+}
+=== wait-for-server
+{
+  "message": "We send this message...",
+  "repeat": 0
+}
+===
+{
+  "message": "And this message together",
+  "repeat": 1
+}
