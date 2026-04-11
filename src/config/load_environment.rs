@@ -7,113 +7,98 @@ pub fn load_environment<'config_data>(
 ) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
     info!("Starting to load environment file:");
 
-    match env::var("IRIS_HOST") {
-        Ok(host) => config_data.host = host,
-        Err(e) => debug!("Host not found in environment variables: {}", e),
-    };
+    set_string_from_env("IRIS_HOST", &mut config_data.host)?;
 
-    match env::var("IRIS_PORT") {
-        Ok(port) => config_data.port = port.parse::<u16>()?,
-        Err(e) => debug!("Port not found in environment variables: {}", e),
-    }
+    set_u16_from_env("IRIS_PORT", &mut config_data.port)?;
 
-    match env::var("IRIS_TLS_ENABLED") {
-        Ok(enabled) => config_data.tls.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("TLS Enabled not found in environment variables: {}", e),
-    };
+    set_bool_from_env("IRIS_TLS_ENABLED", &mut config_data.tls.enabled)?;
 
-    match env::var("IRIS_TLS_CERT_FILE") {
-        Ok(cert_path) => config_data.tls.cert_path = cert_path,
-        Err(e) => debug!("TLS Cert Path not found in environment variables: {}", e),
-    };
+    set_string_from_env("IRIS_TLS_KEY_FILE", &mut config_data.tls.key_path)?;
 
-    match env::var("IRIS_TLS_KEY_FILE") {
-        Ok(key_path) => config_data.tls.key_path = key_path,
-        Err(e) => debug!("TLS Key Path not found in environment variables: {}", e),
-    };
-
-    let ml_engine_count = match env::var("IRIS_ML_ENGINES_COUNT") {
-        Ok(ml_engines_count) => ml_engines_count.parse::<usize>()?,
-        Err(e) => {
-            debug!("ML Engines Count not found in environment variables: {}", e);
-            0
-        }
-    };
+    let ml_engine_count = get_usize_from_env("IRIS_ML_ENGINES_COUNT", false)?;
 
     for engine in 0..ml_engine_count {
         parse_ml_engine(engine, config_data)?;
     }
 
     // STT pipeline configs
-    match env::var("IRIS_PIPELINE_STT_MODEL") {
-        Ok(model) => config_data.pipeline_configs.stt.model = model,
-        Err(e) => debug!("STT Model not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_STT_MODEL",
+        &mut config_data.pipeline_configs.stt.model,
+    )?;
 
-    match env::var("IRIS_PIPELINE_STT_ENGINE_NAME") {
-        Ok(engine_name) => config_data.pipeline_configs.stt.engine_name = engine_name,
-        Err(e) => debug!("STT Engine Name not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_STT_ENGINE_NAME",
+        &mut config_data.pipeline_configs.stt.engine_name,
+    )?;
 
-    match env::var("IRIS_PIPELINE_STT_ENGINE_ENABLED") {
-        Ok(enabled) => config_data.pipeline_configs.stt.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("STT Enabled not found in environment variables: {}", e),
-    };
+    set_bool_from_env(
+        "IRIS_PIPELINE_STT_ENGINE_ENABLED",
+        &mut config_data.pipeline_configs.stt.enabled,
+    )?;
 
     // OCR pipeline configs
-    match env::var("IRIS_PIPELINE_OCR_MODEL") {
-        Ok(model) => config_data.pipeline_configs.ocr.model = model,
-        Err(e) => debug!("OCR Model not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_OCR_MODEL",
+        &mut config_data.pipeline_configs.ocr.model,
+    )?;
 
-    match env::var("IRIS_PIPELINE_OCR_ENGINE_NAME") {
-        Ok(engine_name) => config_data.pipeline_configs.ocr.engine_name = engine_name,
-        Err(e) => debug!("OCR Engine Name not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_OCR_ENGINE_NAME",
+        &mut config_data.pipeline_configs.ocr.engine_name,
+    )?;
 
-    match env::var("IRIS_PIPELINE_OCR_ENGINE_ENABLED") {
-        Ok(enabled) => config_data.pipeline_configs.ocr.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("OCR Enabled not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_OCR_SYSTEM_PROMPT",
+        &mut config_data.pipeline_configs.ocr.system_prompt,
+    )?;
+
+    set_bool_from_env(
+        "IRIS_PIPELINE_OCR_ENGINE_ENABLED",
+        &mut config_data.pipeline_configs.ocr.enabled,
+    )?;
 
     // LLM pipeline configs
-    match env::var("IRIS_PIPELINE_LLM_MODEL") {
-        Ok(model) => config_data.pipeline_configs.llm.model = model,
-        Err(e) => debug!("LLM Model not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_LLM_MODEL",
+        &mut config_data.pipeline_configs.llm.model,
+    )?;
 
-    match env::var("IRIS_PIPELINE_LLM_ENGINE_NAME") {
-        Ok(engine_name) => config_data.pipeline_configs.llm.engine_name = engine_name,
-        Err(e) => debug!("LLM Engine Name not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_LLM_ENGINE_NAME",
+        &mut config_data.pipeline_configs.llm.engine_name,
+    )?;
 
-    match env::var("IRIS_PIPELINE_LLM_VISION_VISION_MODEL") {
-        Ok(vision_model) => {
-            config_data.pipeline_configs.llm.vision_model = vision_model.parse::<bool>()?
-        }
-        Err(e) => debug!("LLM vision model not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_LLM_SYSTEM_PROMPT",
+        &mut config_data.pipeline_configs.llm.system_prompt,
+    )?;
 
-    match env::var("IRIS_PIPELINE_LLM_ENGINE_ENABLED") {
-        Ok(enabled) => config_data.pipeline_configs.llm.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("LLM Enabled not found in environment variables: {}", e),
-    };
+    set_bool_from_env(
+        "IRIS_PIPELINE_LLM_VISION_MODEL",
+        &mut config_data.pipeline_configs.llm.vision_model,
+    )?;
+
+    set_bool_from_env(
+        "IRIS_PIPELINE_LLM_ENGINE_ENABLED",
+        &mut config_data.pipeline_configs.llm.enabled,
+    )?;
 
     // TTS pipeline configs
-    match env::var("IRIS_PIPELINE_TTS_MODEL") {
-        Ok(model) => config_data.pipeline_configs.tts.model = model,
-        Err(e) => debug!("TTS Model not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_TTS_MODEL",
+        &mut config_data.pipeline_configs.tts.model,
+    )?;
 
-    match env::var("IRIS_PIPELINE_TTS_ENGINE_NAME") {
-        Ok(engine_name) => config_data.pipeline_configs.tts.engine_name = engine_name,
-        Err(e) => debug!("TTS Engine Name not found in environment variables: {}", e),
-    };
+    set_string_from_env(
+        "IRIS_PIPELINE_TTS_ENGINE_NAME",
+        &mut config_data.pipeline_configs.tts.engine_name,
+    )?;
 
-    match env::var("IRIS_PIPELINE_TTS_ENGINE_ENABLED") {
-        Ok(enabled) => config_data.pipeline_configs.tts.enabled = enabled.parse::<bool>()?,
-        Err(e) => debug!("TTS Enabled not found in environment variables: {}", e),
-    };
+    set_bool_from_env(
+        "IRIS_PIPELINE_TTS_ENGINE_ENABLED",
+        &mut config_data.pipeline_configs.tts.enabled,
+    )?;
 
     Ok(config_data)
 }
@@ -122,87 +107,27 @@ fn parse_ml_engine<'config_data>(
     engine_id: usize,
     config_data: &'config_data mut ConfigData,
 ) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
-    let name = match env::var(format!("IRIS_ML_ENGINE_{}_NAME", engine_id)) {
-        Ok(name) => name,
-        Err(e) => {
-            let message = format!(
-                "ML Engine {} name not found in environment variables: {}",
-                engine_id, e
-            );
-            debug!("{}", message);
-            Err(message)?
-        }
-    };
+    let name = get_string_from_env(format!("IRIS_ML_ENGINE_{}_NAME", engine_id).as_str(), true)?;
 
     let engine_config_creation_necessary = !config_data.ml_engines.contains_key(&name);
 
-    let mut engine_type = MLEngineType::OpenAI;
-    match env::var(format!("IRIS_ML_ENGINE_{}_TYPE", engine_id)) {
-        Ok(this_engine_type) => {
-            engine_type = match this_engine_type.as_str() {
-                "openai" => MLEngineType::OpenAI,
-                "ollama" => MLEngineType::Ollama,
-                _ => {
-                    let message = format!("ML Engine {}: Unsupported type", engine_id);
-                    debug!("{}", message);
-                    Err(message)?
-                }
-            };
-            if !engine_config_creation_necessary {
-                config_data.ml_engines.get_mut(&name).unwrap().engine_type = engine_type.clone();
-            }
-        }
-        Err(e) => {
-            let message = format!(
-                "ML Engine {} type not found in environment variables: {}",
-                engine_id, e
-            );
-            debug!("{}", message);
-            if engine_config_creation_necessary {
-                Err(message)?
-            }
-        }
-    };
+    let engine_type = set_engine_type_if_key_exists(
+        format!("IRIS_ML_ENGINE_{}_TYPE", engine_id).as_str(),
+        &mut config_data.ml_engines.get_mut(&name).unwrap().engine_type,
+        !engine_config_creation_necessary,
+    )?;
 
-    let mut url = "".to_string();
-    match env::var(format!("IRIS_ML_ENGINE_{}_URL", engine_id)) {
-        Ok(this_url) => {
-            url = this_url;
-            if !engine_config_creation_necessary {
-                config_data.ml_engines.get_mut(&name).unwrap().url = url.clone();
-            }
-        }
-        Err(e) => {
-            let message = format!(
-                "ML Engine {} url not found in environment variables: {}",
-                engine_id, e
-            );
-            debug!("{}", message);
-            if engine_config_creation_necessary {
-                Err(message)?
-            }
-        }
-    };
+    let mut url = set_string_if_key_exists(
+        format!("IRIS_ML_ENGINE_{}_URL", engine_id).as_str(),
+        &mut config_data.ml_engines.get_mut(&name).unwrap().url,
+        !engine_config_creation_necessary,
+    )?;
 
-    let mut api_key = "".to_string();
-    match env::var(format!("IRIS_ML_ENGINE_{}_API_KEY", engine_id)) {
-        Ok(this_api_key) => {
-            api_key = this_api_key;
-            if !engine_config_creation_necessary {
-                config_data.ml_engines.get_mut(&name).unwrap().api_key = api_key.clone();
-            }
-        }
-        Err(e) => {
-            let message = format!(
-                "ML Engine {} api key not found in environment variables: {}",
-                engine_id, e
-            );
-            debug!("{}", message);
-            if engine_config_creation_necessary {
-                Err(message)?
-            }
-        }
-    };
+    let mut api_key = set_string_if_key_exists(
+        format!("IRIS_ML_ENGINE_{}_API_KEY", engine_id).as_str(),
+        &mut config_data.ml_engines.get_mut(&name).unwrap().api_key,
+        !engine_config_creation_necessary,
+    )?;
 
     if engine_config_creation_necessary {
         config_data.ml_engines.insert(
@@ -216,6 +141,139 @@ fn parse_ml_engine<'config_data>(
     }
 
     Ok(config_data)
+}
+
+fn set_string_from_env(
+    env_var_name: &str,
+    destination: &mut String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            *destination = value;
+            Ok(())
+        }
+        Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            debug!("{}", message);
+            Ok(())
+        }
+    }
+}
+
+fn set_string_if_key_exists(
+    env_var_name: &str,
+    destination: &mut String,
+    key_exists: bool,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            if key_exists {
+                *destination = value;
+                Ok("".to_string())
+            } else {
+                Ok(value)
+            }
+        }
+        Err(e) => {
+            if key_exists {
+                Err(format!(
+                    "{} not found in environment variables: {}",
+                    env_var_name, e
+                ))?
+            } else {
+                Ok("".to_string())
+            }
+        }
+    }
+}
+
+fn get_string_from_env(
+    env_var_name: &str,
+    mandatory: bool,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => Ok(value),
+        Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            debug!("{}", message);
+            if mandatory {
+                Err(message)?
+            } else {
+                Ok("".to_string())
+            }
+        }
+    }
+}
+
+fn set_engine_type_if_key_exists(
+    env_var_name: &str,
+    destination: &mut MLEngineType,
+    key_exists: bool,
+) -> Result<MLEngineType, Box<dyn std::error::Error>> {
+    let engine_type_string = get_string_from_env(env_var_name, key_exists)?;
+    let engine_type = match engine_type_string.as_str() {
+        "openai" => MLEngineType::OpenAI,
+        "ollama" => MLEngineType::Ollama,
+        _ => {
+            let message = format!("{}: Unsupported type", env_var_name);
+            debug!("{}", message);
+            Err(message)?
+        }
+    };
+    if key_exists {
+        *destination = engine_type;
+        Ok(MLEngineType::OpenAI)
+    } else {
+        Ok(engine_type)
+    }
+}
+
+fn set_bool_from_env(
+    env_var_name: &str,
+    destination: &mut bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            *destination = value.parse::<bool>()?;
+            Ok(())
+        }
+        Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            debug!("{}", message);
+            Ok(())
+        }
+    }
+}
+
+fn set_u16_from_env(
+    env_var_name: &str,
+    destination: &mut u16,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            *destination = value.parse::<u16>()?;
+            Ok(())
+        }
+        Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            debug!("{}", message);
+            Ok(())
+        }
+    }
+}
+
+fn get_usize_from_env(
+    env_var_name: &str,
+    mandatory: bool,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => Ok(value.parse::<usize>()?),
+        Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            debug!("{}", message);
+            if mandatory { Err(message)? } else { Ok(0) }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -251,7 +309,7 @@ mod tests {
             env::set_var("IRIS_PIPELINE_OCR_ENGINE_ENABLED", "true");
             env::set_var("IRIS_PIPELINE_LLM_MODEL", "qwen3-vl:8b");
             env::set_var("IRIS_PIPELINE_LLM_ENGINE_NAME", "my-ollama");
-            env::set_var("IRIS_PIPELINE_LLM_VISION_VISION_MODEL", "true");
+            env::set_var("IRIS_PIPELINE_LLM_VISION_MODEL", "true");
             env::set_var("IRIS_PIPELINE_LLM_ENGINE_ENABLED", "true");
             env::set_var("IRIS_PIPELINE_TTS_MODEL", "qwen3-tts");
             env::set_var("IRIS_PIPELINE_TTS_ENGINE_NAME", "my-openai");
@@ -283,7 +341,7 @@ mod tests {
             env::remove_var("IRIS_PIPELINE_OCR_ENGINE_ENABLED");
             env::remove_var("IRIS_PIPELINE_LLM_MODEL");
             env::remove_var("IRIS_PIPELINE_LLM_ENGINE_NAME");
-            env::remove_var("IRIS_PIPELINE_LLM_VISION_VISION_MODEL");
+            env::remove_var("IRIS_PIPELINE_LLM_VISION_MODEL");
             env::remove_var("IRIS_PIPELINE_LLM_ENGINE_ENABLED");
             env::remove_var("IRIS_PIPELINE_TTS_MODEL");
             env::remove_var("IRIS_PIPELINE_TTS_ENGINE_NAME");
