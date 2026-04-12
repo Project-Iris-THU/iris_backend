@@ -1,14 +1,14 @@
-use crate::data::config::{MLEngineConfig, OcrConfig};
+use crate::data::config::OcrConfig;
 use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
 use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use ollama_rs::Ollama;
 use ollama_rs::generation::completion::request::GenerationRequest;
 use ollama_rs::generation::images::Image;
 use std::error::Error;
-use std::sync::Arc;
 
 pub struct OllamaOcrAdapter {
-    ollama_client: Arc<ollama_rs::Ollama>,
+    ollama_client: Ollama,
     config: OcrConfig,
 }
 
@@ -26,7 +26,7 @@ impl OcrInterface for OllamaOcrAdapter {
 }
 
 impl OllamaOcrAdapter {
-    pub fn new(ollama_client: Arc<ollama_rs::Ollama>, config: OcrConfig) -> Self {
+    pub fn new(ollama_client: Ollama, config: OcrConfig) -> Self {
         Self {
             ollama_client,
             config,

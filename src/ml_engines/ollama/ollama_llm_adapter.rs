@@ -2,12 +2,10 @@ use crate::data::config::LlmConfig;
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use async_trait::async_trait;
 use ollama_rs::generation::completion::request::GenerationRequest;
-use ollama_rs::generation::completion::{GenerationContext, GenerationResponse};
 use std::error::Error;
-use std::sync::Arc;
 
 pub struct OllamaLlmAdapter {
-    ollama_client: Arc<ollama_rs::Ollama>,
+    ollama_client: ollama_rs::Ollama,
     config: LlmConfig,
 }
 
@@ -23,7 +21,7 @@ impl LlmInterface for OllamaLlmAdapter {
 }
 
 impl OllamaLlmAdapter {
-    pub fn new(ollama_client: Arc<ollama_rs::Ollama>, config: LlmConfig) -> Self {
+    pub fn new(ollama_client: ollama_rs::Ollama, config: LlmConfig) -> Self {
         Self {
             ollama_client,
             config,
