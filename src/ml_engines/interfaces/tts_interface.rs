@@ -1,7 +1,6 @@
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait TtsInterface {
-    fn generate_audio(
-        &self,
-        text: &str,
-        streaming: bool,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    async fn generate_audio(&self, text: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
 }

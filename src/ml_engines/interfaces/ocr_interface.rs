@@ -1,7 +1,6 @@
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait OcrInterface {
-    fn recognize_text(
-        &self,
-        image: Vec<u8>,
-        streaming: bool,
-    ) -> Result<String, Box<dyn std::error::Error>>;
+    async fn recognize_text(&self, image: Vec<u8>) -> Result<String, Box<dyn std::error::Error>>;
 }
