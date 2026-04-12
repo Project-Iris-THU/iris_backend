@@ -1,5 +1,9 @@
 use crate::data::config::{MLEngineConfig, OcrConfig};
 use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
+use async_trait::async_trait;
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use ollama_rs::generation::completion::request::GenerationRequest;
+use ollama_rs::generation::images::Image;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -8,9 +12,16 @@ pub struct OllamaOcrAdapter {
     config: OcrConfig,
 }
 
+#[async_trait]
 impl OcrInterface for OllamaOcrAdapter {
-    fn recognize_text(&self, image: Vec<u8>, streaming: bool) -> Result<String, Box<dyn Error>> {
-        todo!()
+    async fn recognize_text(&self, image: Vec<u8>) -> Result<String, Box<dyn Error>> {
+        let image = Image::from_base64(STANDARD.encode(image));
+        let request =
+            GenerationRequest::new(self.config.model.clone(), self.config.system_prompt.clone())
+                .add_image(image);
+
+        let response = self.ollama_client.generate(request).await?;
+        Ok(response.response)
     }
 }
 

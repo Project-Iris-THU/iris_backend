@@ -1,5 +1,8 @@
 use crate::data::config::LlmConfig;
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
+use async_trait::async_trait;
+use ollama_rs::generation::completion::request::GenerationRequest;
+use ollama_rs::generation::completion::{GenerationContext, GenerationResponse};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -8,9 +11,14 @@ pub struct OllamaLlmAdapter {
     config: LlmConfig,
 }
 
+#[async_trait]
 impl LlmInterface for OllamaLlmAdapter {
-    fn generate_text(&self, prompt: &str, streaming: bool) -> Result<String, Box<dyn Error>> {
-        todo!()
+    async fn generate_text(&self, prompt: &str) -> Result<String, Box<dyn Error>> {
+        let request = GenerationRequest::new(self.config.model.clone(), prompt)
+            .system(self.config.system_prompt.clone());
+
+        let response = self.ollama_client.generate(request).await?;
+        Ok(response.response)
     }
 }
 
