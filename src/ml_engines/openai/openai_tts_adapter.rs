@@ -1,9 +1,11 @@
+use crate::data::config::TtsConfig;
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
 use std::error::Error;
 use std::sync::Arc;
 
 pub struct OpenAiTtsAdapter {
     openai_client: Arc<openai_api_rust::OpenAI>,
+    config: TtsConfig,
 }
 
 impl TtsInterface for OpenAiTtsAdapter {
@@ -13,7 +15,10 @@ impl TtsInterface for OpenAiTtsAdapter {
 }
 
 impl OpenAiTtsAdapter {
-    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>) -> Self {
-        Self { openai_client }
+    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>, config: TtsConfig) -> Self {
+        Self {
+            openai_client,
+            config,
+        }
     }
 }

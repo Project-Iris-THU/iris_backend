@@ -1,9 +1,11 @@
+use crate::data::config::{LlmConfig, OcrConfig};
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use std::error::Error;
 use std::sync::Arc;
 
 pub struct OpenAiLlmAdapter {
     openai_client: Arc<openai_api_rust::OpenAI>,
+    config: LlmConfig,
 }
 
 impl LlmInterface for OpenAiLlmAdapter {
@@ -13,7 +15,10 @@ impl LlmInterface for OpenAiLlmAdapter {
 }
 
 impl OpenAiLlmAdapter {
-    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>) -> Self {
-        Self { openai_client }
+    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>, config: LlmConfig) -> Self {
+        Self {
+            openai_client,
+            config,
+        }
     }
 }

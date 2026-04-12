@@ -22,25 +22,31 @@ pub struct MLEngineConfig {
     pub api_key: String,
 }
 
+#[derive(Clone)]
 pub struct SttConfig {
     pub model: String,
     pub engine_name: String,
     pub enabled: bool,
 }
 
+#[derive(Clone)]
 pub struct OcrConfig {
     pub model: String,
     pub engine_name: String,
+    pub system_prompt: String,
     pub enabled: bool,
 }
 
+#[derive(Clone)]
 pub struct LlmConfig {
     pub model: String,
     pub engine_name: String,
     pub vision_model: bool,
+    pub system_prompt: String,
     pub enabled: bool,
 }
 
+#[derive(Clone)]
 pub struct TtsConfig {
     pub model: String,
     pub engine_name: String,

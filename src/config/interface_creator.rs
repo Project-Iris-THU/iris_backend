@@ -61,37 +61,59 @@ pub fn create_interfaces(
         };
     }
 
-    let stt_engine_name = &config_data.pipeline_configs.stt.engine_name;
+    let stt_engine_config = &config_data.pipeline_configs.stt;
+    let stt_engine_name = &stt_engine_config.engine_name;
     let stt_interface: Box<dyn SttInterface> = match openai_engines.get(stt_engine_name) {
-        Some(engine) => Box::new(OpenAiSttAdapter::new(Arc::clone(engine))),
+        Some(engine) => Box::new(OpenAiSttAdapter::new(
+            Arc::clone(engine),
+            (*stt_engine_config).clone(),
+        )),
         None => return Err(format!("Specified STT engine {} not found", stt_engine_name).into()),
     };
 
-    let ocr_engine_name = &config_data.pipeline_configs.ocr.engine_name;
+    let ocr_engine_config = &config_data.pipeline_configs.ocr;
+    let ocr_engine_name = &ocr_engine_config.engine_name;
     let ocr_interface: Box<dyn OcrInterface> = match ollama_engines.get(ocr_engine_name) {
-        Some(engine) => Box::new(OllamaOcrAdapter::new(Arc::clone(engine))),
+        Some(engine) => Box::new(OllamaOcrAdapter::new(
+            Arc::clone(engine),
+            (*ocr_engine_config).clone(),
+        )),
         None => match openai_engines.get(ocr_engine_name) {
-            Some(engine) => Box::new(OpenAiOcrAdapter::new(Arc::clone(engine))),
+            Some(engine) => Box::new(OpenAiOcrAdapter::new(
+                Arc::clone(engine),
+                (*ocr_engine_config).clone(),
+            )),
             None => {
                 return Err(format!("Specified OCR engine {} not found", ocr_engine_name).into());
             }
         },
     };
 
-    let llm_engine_name = &config_data.pipeline_configs.llm.engine_name;
+    let llm_engine_config = &config_data.pipeline_configs.llm;
+    let llm_engine_name = &llm_engine_config.engine_name;
     let llm_interface: Box<dyn LlmInterface> = match ollama_engines.get(llm_engine_name) {
-        Some(engine) => Box::new(OllamaLlmAdapter::new(Arc::clone(engine))),
+        Some(engine) => Box::new(OllamaLlmAdapter::new(
+            Arc::clone(engine),
+            (*llm_engine_config).clone(),
+        )),
         None => match openai_engines.get(llm_engine_name) {
-            Some(engine) => Box::new(OpenAiLlmAdapter::new(Arc::clone(engine))),
+            Some(engine) => Box::new(OpenAiLlmAdapter::new(
+                Arc::clone(engine),
+                (*llm_engine_config).clone(),
+            )),
             None => {
                 return Err(format!("Specified LLM engine {} not found", llm_engine_name).into());
             }
         },
     };
 
-    let tts_engine_name = &config_data.pipeline_configs.tts.engine_name;
+    let tts_engine_config = &config_data.pipeline_configs.tts;
+    let tts_engine_name = &tts_engine_config.engine_name;
     let tts_interface: Box<dyn TtsInterface> = match openai_engines.get(tts_engine_name) {
-        Some(engine) => Box::new(OpenAiTtsAdapter::new(Arc::clone(engine))),
+        Some(engine) => Box::new(OpenAiTtsAdapter::new(
+            Arc::clone(engine),
+            (*tts_engine_config).clone(),
+        )),
         None => return Err(format!("Specified TTS engine {} not found", tts_engine_name).into()),
     };
 
