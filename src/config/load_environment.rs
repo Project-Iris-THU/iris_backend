@@ -15,6 +15,8 @@ pub fn load_environment<'config_data>(
 
     set_string_from_env("IRIS_TLS_KEY_FILE", &mut config_data.tls.key_path)?;
 
+    set_string_from_env("IRIS_TLS_CERT_FILE", &mut config_data.tls.cert_path)?;
+
     let ml_engine_count = get_usize_from_env("IRIS_ML_ENGINES_COUNT", false)?;
 
     for engine in 0..ml_engine_count {
@@ -110,6 +112,16 @@ fn parse_ml_engine<'config_data>(
     let name = get_string_from_env(format!("IRIS_ML_ENGINE_{}_NAME", engine_id).as_str(), true)?;
 
     let engine_config_creation_necessary = !config_data.ml_engines.contains_key(&name);
+    if engine_config_creation_necessary {
+        config_data.ml_engines.insert(
+            name.clone(),
+            MLEngineConfig {
+                engine_type: MLEngineType::OpenAI,
+                url: "".to_string(),
+                api_key: "".to_string(),
+            },
+        );
+    }
 
     let engine_type = set_engine_type_if_key_exists(
         format!("IRIS_ML_ENGINE_{}_TYPE", engine_id).as_str(),
@@ -117,28 +129,17 @@ fn parse_ml_engine<'config_data>(
         !engine_config_creation_necessary,
     )?;
 
-    let mut url = set_string_if_key_exists(
+    let url = set_string_if_key_exists(
         format!("IRIS_ML_ENGINE_{}_URL", engine_id).as_str(),
         &mut config_data.ml_engines.get_mut(&name).unwrap().url,
         !engine_config_creation_necessary,
     )?;
 
-    let mut api_key = set_string_if_key_exists(
+    let api_key = set_string_if_key_exists(
         format!("IRIS_ML_ENGINE_{}_API_KEY", engine_id).as_str(),
         &mut config_data.ml_engines.get_mut(&name).unwrap().api_key,
         !engine_config_creation_necessary,
     )?;
-
-    if engine_config_creation_necessary {
-        config_data.ml_engines.insert(
-            name,
-            MLEngineConfig {
-                engine_type,
-                url,
-                api_key,
-            },
-        );
-    }
 
     Ok(config_data)
 }
@@ -164,24 +165,19 @@ fn set_string_if_key_exists(
     env_var_name: &str,
     destination: &mut String,
     key_exists: bool,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     match env::var(env_var_name) {
         Ok(value) => {
-            if key_exists {
-                *destination = value;
-                Ok("".to_string())
-            } else {
-                Ok(value)
-            }
+            *destination = value;
+            Ok(())
         }
         Err(e) => {
+            let message = format!("{} not found in environment variables: {}", env_var_name, e);
             if key_exists {
-                Err(format!(
-                    "{} not found in environment variables: {}",
-                    env_var_name, e
-                ))?
+                debug!("{}", message);
+                Ok(())
             } else {
-                Ok("".to_string())
+                Err(message)?
             }
         }
     }
@@ -209,7 +205,7 @@ fn set_engine_type_if_key_exists(
     env_var_name: &str,
     destination: &mut MLEngineType,
     key_exists: bool,
-) -> Result<MLEngineType, Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let engine_type_string = get_string_from_env(env_var_name, key_exists)?;
     let engine_type = match engine_type_string.as_str() {
         "openai" => MLEngineType::OpenAI,
@@ -220,12 +216,8 @@ fn set_engine_type_if_key_exists(
             Err(message)?
         }
     };
-    if key_exists {
-        *destination = engine_type;
-        Ok(MLEngineType::OpenAI)
-    } else {
-        Ok(engine_type)
-    }
+    *destination = engine_type;
+    Ok(())
 }
 
 fn set_bool_from_env(

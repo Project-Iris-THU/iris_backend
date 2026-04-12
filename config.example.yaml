@@ -24,10 +24,20 @@ pipeline_configs:
   ocr:
     model: deepseek-ocr
     engine_name: my-ollama
+    system_prompt: "
+    You are a helpful assistant.
+    You will be given an image.
+    You will respond with the text contained in the image.
+    Do not include any explanations or additional text.
+    "
     enabled: false
   llm:
     model: "qwen3-vl:8b"
     engine_name: my-ollama
+    system_prompt: "
+    You are a helpful assistant.
+    Translate the following text into easy language and do not include any explanations or additional text:
+    "
     vision_model: true
     enabled: true
   tts:

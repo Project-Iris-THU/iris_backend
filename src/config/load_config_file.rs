@@ -166,7 +166,7 @@ fn parse_ml_engine<'config_data>(
 }
 
 fn get_string_from_value(value: &Value, key: &str) -> Result<String, Box<dyn std::error::Error>> {
-    match value.get_str("api_key") {
+    match value.get_str(key) {
         Some(value) => match value.as_str() {
             Some(value) => Ok(value.to_string()),
             None => Err(format!("{} is not a string", key))?,
@@ -176,11 +176,23 @@ fn get_string_from_value(value: &Value, key: &str) -> Result<String, Box<dyn std
 }
 
 fn get_bool_from_value(value: &Value, key: &str) -> Result<bool, Box<dyn std::error::Error>> {
-    Ok(get_string_from_value(value, key)?.parse::<bool>()?)
+    match value.get_str(key) {
+        Some(value) => match value.as_bool() {
+            Some(value) => Ok(value),
+            None => Err(format!("{} is not a bool", key))?,
+        },
+        None => Err(format!("{} not found in config", key))?,
+    }
 }
 
 fn get_u16_from_value(value: &Value, key: &str) -> Result<u16, Box<dyn std::error::Error>> {
-    Ok(get_string_from_value(value, key)?.parse::<u16>()?)
+    match value.get_str(key) {
+        Some(value) => match value.as_int() {
+            Some(value) => Ok(value as u16),
+            None => Err(format!("{} is not an int", key))?,
+        },
+        None => Err(format!("{} not found in config", key))?,
+    }
 }
 
 #[cfg(test)]
@@ -282,10 +294,10 @@ pipeline_configs:
         assert_eq!(
             config_data.pipeline_configs.ocr.system_prompt,
             r#"
-        You are a helpful assistant.
-        Answer the question as concisely as possible.
-        Do not make up answers.
-        "#
+    You are a helpful assistant.
+    Answer the question as concisely as possible.
+    Do not make up answers.
+    "#
         );
         assert_eq!(config_data.pipeline_configs.ocr.enabled, false);
 
@@ -295,11 +307,11 @@ pipeline_configs:
         assert_eq!(
             config_data.pipeline_configs.llm.system_prompt,
             r#"
-        You are a helpful assistant.
-        Answer the question as concisely as possible.
-        Do not make up answers.
-        You are a vision language model.
-        "#
+    You are a helpful assistant.
+    Answer the question as concisely as possible.
+    Do not make up answers.
+    You are a vision language model.
+    "#
         );
         assert_eq!(config_data.pipeline_configs.llm.enabled, true);
 

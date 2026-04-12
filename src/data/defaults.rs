@@ -23,11 +23,13 @@ pub fn create_default_config_data() -> ConfigData {
             ocr: OcrConfig {
                 model: "".to_string(),
                 engine_name: "".to_string(),
+                system_prompt: "".to_string(),
                 enabled: false,
             },
             llm: LlmConfig {
                 model: "".to_string(),
                 engine_name: "".to_string(),
+                system_prompt: "".to_string(),
                 vision_model: false,
                 enabled: false,
             },
