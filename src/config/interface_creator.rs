@@ -10,17 +10,12 @@ use crate::ml_engines::openai::openai_llm_adapter::OpenAiLlmAdapter;
 use crate::ml_engines::openai::openai_ocr_adapter::OpenAiOcrAdapter;
 use crate::ml_engines::openai::openai_stt_adapter::OpenAiSttAdapter;
 use crate::ml_engines::openai::openai_tts_adapter::OpenAiTtsAdapter;
+use async_openai::{Client, config::OpenAIConfig};
 use ollama_rs::Ollama;
-use openai_api_rust::Auth;
-use openai_api_rust::OpenAI;
 use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
 
-enum EngineType {
-    Ollama(Arc<Ollama>),
-    OpenAI(Arc<OpenAI>),
-}
 pub fn create_interfaces(
     config_data: &ConfigData,
 ) -> Result<InterfaceConfig, Box<dyn std::error::Error>> {
@@ -40,7 +35,6 @@ pub fn create_interfaces(
         };
         match engine_config.engine_type {
             MLEngineType::Ollama => {
-                //TODO: Fix ollama initialization
                 let url = Url::parse(&engine_config.url)?;
                 let host = match url.host_str() {
                     Some(host) => host,
@@ -49,14 +43,15 @@ pub fn create_interfaces(
                 let port = url.port().unwrap_or(OLLAMA_DEFAULT_PORT);
                 let ollama_host = format!("{}://{}", url.scheme(), host);
 
-                ollama_engines.insert(engine_name, Arc::new(Ollama::new(ollama_host, port)));
+                ollama_engines.insert(engine_name, Ollama::new(ollama_host, port));
             }
             MLEngineType::OpenAI => {
-                let auth = Auth::new(engine_config.api_key.as_str());
-                openai_engines.insert(
-                    engine_name,
-                    Arc::new(OpenAI::new(auth, engine_config.url.as_str())),
-                );
+                let config = OpenAIConfig::new()
+                    .with_api_base(engine_config.url.as_str())
+                    .with_api_key(engine_config.api_key.as_str());
+                let client = Client::with_config(config);
+
+                openai_engines.insert(engine_name, client);
             }
         };
     }
@@ -65,7 +60,7 @@ pub fn create_interfaces(
     let stt_engine_name = &stt_engine_config.engine_name;
     let stt_interface: Box<dyn SttInterface> = match openai_engines.get(stt_engine_name) {
         Some(engine) => Box::new(OpenAiSttAdapter::new(
-            Arc::clone(engine),
+            engine.clone(),
             (*stt_engine_config).clone(),
         )),
         None => return Err(format!("Specified STT engine {} not found", stt_engine_name).into()),
@@ -75,12 +70,12 @@ pub fn create_interfaces(
     let ocr_engine_name = &ocr_engine_config.engine_name;
     let ocr_interface: Box<dyn OcrInterface> = match ollama_engines.get(ocr_engine_name) {
         Some(engine) => Box::new(OllamaOcrAdapter::new(
-            Arc::clone(engine),
+            engine.clone(),
             (*ocr_engine_config).clone(),
         )),
         None => match openai_engines.get(ocr_engine_name) {
             Some(engine) => Box::new(OpenAiOcrAdapter::new(
-                Arc::clone(engine),
+                engine.clone(),
                 (*ocr_engine_config).clone(),
             )),
             None => {
@@ -93,12 +88,12 @@ pub fn create_interfaces(
     let llm_engine_name = &llm_engine_config.engine_name;
     let llm_interface: Box<dyn LlmInterface> = match ollama_engines.get(llm_engine_name) {
         Some(engine) => Box::new(OllamaLlmAdapter::new(
-            Arc::clone(engine),
+            engine.clone(),
             (*llm_engine_config).clone(),
         )),
         None => match openai_engines.get(llm_engine_name) {
             Some(engine) => Box::new(OpenAiLlmAdapter::new(
-                Arc::clone(engine),
+                engine.clone(),
                 (*llm_engine_config).clone(),
             )),
             None => {
@@ -111,7 +106,7 @@ pub fn create_interfaces(
     let tts_engine_name = &tts_engine_config.engine_name;
     let tts_interface: Box<dyn TtsInterface> = match openai_engines.get(tts_engine_name) {
         Some(engine) => Box::new(OpenAiTtsAdapter::new(
-            Arc::clone(engine),
+            engine.clone(),
             (*tts_engine_config).clone(),
         )),
         None => return Err(format!("Specified TTS engine {} not found", tts_engine_name).into()),
