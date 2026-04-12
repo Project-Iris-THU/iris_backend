@@ -4,7 +4,7 @@ use crate::config::load_config_file::load_config_file;
 use crate::config::load_environment::load_environment;
 use crate::dns::multicast_advertiser::create_multicast_advertiser;
 use crate::web::info::info;
-use crate::web::websocket::websocket_handler;
+use crate::web::websocket::handler::websocket_handler;
 use actix_web::{App, HttpServer};
 use data::defaults::create_default_config_data;
 
