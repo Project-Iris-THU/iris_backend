@@ -1,21 +1,41 @@
 use crate::data::config::OcrConfig;
 use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
+use async_openai::Client;
+use async_openai::config::OpenAIConfig;
+use async_openai::types::responses::CreateResponseArgs;
+use async_trait::async_trait;
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use std::error::Error;
-use std::sync::Arc;
 
 pub struct OpenAiOcrAdapter {
-    openai_client: Arc<openai_api_rust::OpenAI>,
+    openai_client: Client<OpenAIConfig>,
     config: OcrConfig,
 }
 
+#[async_trait]
 impl OcrInterface for OpenAiOcrAdapter {
-    fn recognize_text(&self, image: Vec<u8>, streaming: bool) -> Result<String, Box<dyn Error>> {
-        todo!()
+    async fn recognize_text(&self, image: Vec<u8>) -> Result<String, Box<dyn Error>> {
+        let image_base64 = STANDARD.encode(image);
+
+        let request = CreateResponseArgs::default()
+            .model(self.config.model.clone())
+            .prompt(self.config.system_prompt.clone())
+            .input(image_base64)
+            .build()?;
+
+        let response = self.openai_client.responses().create(request).await?;
+
+        let output_text = match response.output_text() {
+            Some(text) => text,
+            None => return Err("No output text found in response".into()),
+        };
+
+        Ok(output_text)
     }
 }
 
 impl OpenAiOcrAdapter {
-    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>, config: OcrConfig) -> Self {
+    pub fn new(openai_client: Client<OpenAIConfig>, config: OcrConfig) -> Self {
         Self {
             openai_client,
             config,

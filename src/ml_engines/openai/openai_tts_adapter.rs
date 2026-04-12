@@ -1,21 +1,32 @@
 use crate::data::config::TtsConfig;
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
+use async_openai::Client;
+use async_openai::config::OpenAIConfig;
+use async_openai::types::audio::{CreateSpeechRequestArgs, SpeechModel};
+use async_trait::async_trait;
 use std::error::Error;
-use std::sync::Arc;
 
 pub struct OpenAiTtsAdapter {
-    openai_client: Arc<openai_api_rust::OpenAI>,
+    openai_client: Client<OpenAIConfig>,
     config: TtsConfig,
 }
 
+#[async_trait]
 impl TtsInterface for OpenAiTtsAdapter {
-    fn generate_audio(&self, text: &str, streaming: bool) -> Result<Vec<u8>, Box<dyn Error>> {
-        todo!()
+    async fn generate_audio(&self, text: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        let request = CreateSpeechRequestArgs::default()
+            .input(text.to_string())
+            .model(SpeechModel::Other(self.config.model.clone()))
+            .build()?;
+
+        let response = self.openai_client.audio().speech().create(request).await?;
+
+        Ok(Vec::from(response.bytes))
     }
 }
 
 impl OpenAiTtsAdapter {
-    pub fn new(openai_client: Arc<openai_api_rust::OpenAI>, config: TtsConfig) -> Self {
+    pub fn new(openai_client: Client<OpenAIConfig>, config: TtsConfig) -> Self {
         Self {
             openai_client,
             config,
