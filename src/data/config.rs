@@ -3,6 +3,7 @@ use crate::ml_engines::interfaces::ocr_interface::OcrInterface;
 use crate::ml_engines::interfaces::stt_interface::SttInterface;
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct TlsConfig {
     pub enabled: bool,
@@ -67,9 +68,10 @@ pub struct ConfigData {
     pub pipeline_configs: PipelineConfigs,
 }
 
+#[derive(Clone)]
 pub struct InterfaceConfig {
-    pub stt_interface: Box<dyn SttInterface>,
-    pub ocr_interface: Box<dyn OcrInterface>,
-    pub llm_interface: Box<dyn LlmInterface>,
-    pub tts_interface: Box<dyn TtsInterface>,
+    pub stt_interface: Arc<dyn SttInterface + Send + Sync>,
+    pub ocr_interface: Arc<dyn OcrInterface + Send + Sync>,
+    pub llm_interface: Arc<dyn LlmInterface + Send + Sync>,
+    pub tts_interface: Arc<dyn TtsInterface + Send + Sync>,
 }
