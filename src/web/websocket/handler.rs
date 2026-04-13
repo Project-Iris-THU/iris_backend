@@ -1,10 +1,24 @@
+use crate::data::app_state::AppState;
+use crate::pipeline::pipeline::run;
 use actix_web::{Error, HttpRequest, HttpResponse, get, rt, web};
 use actix_ws::AggregatedMessage;
-use futures_util::StreamExt as _;
+use futures_util::{SinkExt, StreamExt as _};
+use log::debug;
+use tokio::sync::mpsc;
 
 #[get("/ws")]
-async fn websocket_handler(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+async fn websocket_handler(
+    data: web::Data<AppState>,
+    req: HttpRequest,
+    stream: web::Payload,
+) -> Result<HttpResponse, Error> {
     let (res, mut session, stream) = actix_ws::handle(&req, stream)?;
+
+    let (tx_in, rx_in) = mpsc::unbounded_channel::<AggregatedMessage>();
+
+    let (tx_out, mut rx_out) = mpsc::unbounded_channel::<AggregatedMessage>();
+
+    tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
 
     let mut stream = stream
         .aggregate_continuations()
@@ -13,24 +27,43 @@ async fn websocket_handler(req: HttpRequest, stream: web::Payload) -> Result<Htt
     rt::spawn(async move {
         // receive messages from websocket
         while let Some(msg) = stream.next().await {
+            let msg = match msg {
+                Ok(msg) => msg,
+                Err(e) => {
+                    debug!("{}", e);
+                    continue;
+                }
+            };
+
+            match tx_in.send(msg) {
+                Ok(_) => (),
+                Err(e) => {
+                    debug!("{}", e);
+                }
+            }
+        }
+    });
+
+    rt::spawn(async move {
+        while let Some(msg) = rx_out.recv().await {
             match msg {
-                Ok(AggregatedMessage::Text(text)) => {
-                    // echo text message
+                AggregatedMessage::Text(text) => {
                     session.text(text).await.unwrap();
                 }
-
-                Ok(AggregatedMessage::Binary(bin)) => {
-                    // echo binary message
+                AggregatedMessage::Binary(bin) => {
                     session.binary(bin).await.unwrap();
                 }
-
-                Ok(AggregatedMessage::Ping(msg)) => {
-                    // respond to PING frame with PONG frame
+                AggregatedMessage::Ping(msg) => {
+                    session.ping(&msg).await.unwrap();
+                }
+                AggregatedMessage::Pong(msg) => {
                     session.pong(&msg).await.unwrap();
                 }
-
-                _ => {}
-            }
+                AggregatedMessage::Close(reason) => {
+                    session.close(reason).await.unwrap();
+                    break;
+                }
+            };
         }
     });
 
