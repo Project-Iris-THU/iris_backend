@@ -11,11 +11,11 @@ pub struct OpenAiLlmAdapter {
 
 #[async_trait]
 impl LlmInterface for OpenAiLlmAdapter {
-    async fn generate_text(&self, prompt: &str) -> Result<String, Box<dyn Error>> {
+    async fn generate_text(&self, prompt: String) -> Result<String, Box<dyn Error + Send + Sync>> {
         let request = CreateResponseArgs::default()
             .model(self.config.model.clone())
             .prompt(self.config.system_prompt.clone())
-            .input(prompt.to_string())
+            .input(prompt)
             .build()?;
 
         let response = self.openai_client.responses().create(request).await?;

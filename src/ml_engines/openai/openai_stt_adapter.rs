@@ -4,6 +4,7 @@ use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::audio::{AudioInput, CreateTranscriptionRequestArgs};
 use async_trait::async_trait;
+use bytes::Bytes;
 use std::error::Error;
 
 pub struct OpenAiSttAdapter {
@@ -13,8 +14,8 @@ pub struct OpenAiSttAdapter {
 
 #[async_trait]
 impl SttInterface for OpenAiSttAdapter {
-    async fn recognize_speech(&self, audio: Vec<u8>) -> Result<String, Box<dyn Error>> {
-        let audio_file = AudioInput::from_vec_u8("audio".to_string(), audio);
+    async fn recognize_speech(&self, audio: Bytes) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let audio_file = AudioInput::from_bytes("audio".to_string(), audio);
 
         let request = CreateTranscriptionRequestArgs::default()
             .model(self.config.model.clone())

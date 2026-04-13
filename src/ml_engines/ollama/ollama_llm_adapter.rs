@@ -11,7 +11,7 @@ pub struct OllamaLlmAdapter {
 
 #[async_trait]
 impl LlmInterface for OllamaLlmAdapter {
-    async fn generate_text(&self, prompt: &str) -> Result<String, Box<dyn Error>> {
+    async fn generate_text(&self, prompt: String) -> Result<String, Box<dyn Error + Send + Sync>> {
         let request = GenerationRequest::new(self.config.model.clone(), prompt)
             .system(self.config.system_prompt.clone());
 

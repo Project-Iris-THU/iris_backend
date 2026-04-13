@@ -4,6 +4,7 @@ use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::audio::{CreateSpeechRequestArgs, SpeechModel};
 use async_trait::async_trait;
+use bytes::Bytes;
 use std::error::Error;
 
 pub struct OpenAiTtsAdapter {
@@ -13,7 +14,7 @@ pub struct OpenAiTtsAdapter {
 
 #[async_trait]
 impl TtsInterface for OpenAiTtsAdapter {
-    async fn generate_audio(&self, text: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    async fn generate_audio(&self, text: &str) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
         let request = CreateSpeechRequestArgs::default()
             .input(text.to_string())
             .model(SpeechModel::Other(self.config.model.clone()))
@@ -21,7 +22,7 @@ impl TtsInterface for OpenAiTtsAdapter {
 
         let response = self.openai_client.audio().speech().create(request).await?;
 
-        Ok(Vec::from(response.bytes))
+        Ok(response.bytes)
     }
 }
 

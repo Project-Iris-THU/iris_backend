@@ -5,7 +5,9 @@ use async_openai::config::OpenAIConfig;
 use async_openai::types::responses::CreateResponseArgs;
 use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use bytes::Bytes;
 use std::error::Error;
+use std::fmt::format;
 
 pub struct OpenAiOcrAdapter {
     openai_client: Client<OpenAIConfig>,
@@ -14,8 +16,8 @@ pub struct OpenAiOcrAdapter {
 
 #[async_trait]
 impl OcrInterface for OpenAiOcrAdapter {
-    async fn recognize_text(&self, image: Vec<u8>) -> Result<String, Box<dyn Error>> {
-        let image_base64 = STANDARD.encode(image);
+    async fn recognize_text(&self, image: Bytes) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let image_base64 = format!("data:image/png;base64,{}", STANDARD.encode(image));
 
         let request = CreateResponseArgs::default()
             .model(self.config.model.clone())

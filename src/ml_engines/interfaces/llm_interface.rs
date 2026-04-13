@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait LlmInterface {
-    async fn generate_text(&self, prompt: &str) -> Result<String, Box<dyn std::error::Error>>;
+pub trait LlmInterface: Send + Sync {
+    async fn generate_text(
+        &self,
+        prompt: String,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>;
 }
