@@ -58,8 +58,8 @@ pub fn create_interfaces(
 
     let stt_engine_config = &config_data.pipeline_configs.stt;
     let stt_engine_name = &stt_engine_config.engine_name;
-    let stt_interface: Box<dyn SttInterface> = match openai_engines.get(stt_engine_name) {
-        Some(engine) => Box::new(OpenAiSttAdapter::new(
+    let stt_interface: Arc<dyn SttInterface> = match openai_engines.get(stt_engine_name) {
+        Some(engine) => Arc::new(OpenAiSttAdapter::new(
             engine.clone(),
             (*stt_engine_config).clone(),
         )),
@@ -68,13 +68,13 @@ pub fn create_interfaces(
 
     let ocr_engine_config = &config_data.pipeline_configs.ocr;
     let ocr_engine_name = &ocr_engine_config.engine_name;
-    let ocr_interface: Box<dyn OcrInterface> = match ollama_engines.get(ocr_engine_name) {
-        Some(engine) => Box::new(OllamaOcrAdapter::new(
+    let ocr_interface: Arc<dyn OcrInterface> = match ollama_engines.get(ocr_engine_name) {
+        Some(engine) => Arc::new(OllamaOcrAdapter::new(
             engine.clone(),
             (*ocr_engine_config).clone(),
         )),
         None => match openai_engines.get(ocr_engine_name) {
-            Some(engine) => Box::new(OpenAiOcrAdapter::new(
+            Some(engine) => Arc::new(OpenAiOcrAdapter::new(
                 engine.clone(),
                 (*ocr_engine_config).clone(),
             )),
@@ -86,13 +86,13 @@ pub fn create_interfaces(
 
     let llm_engine_config = &config_data.pipeline_configs.llm;
     let llm_engine_name = &llm_engine_config.engine_name;
-    let llm_interface: Box<dyn LlmInterface> = match ollama_engines.get(llm_engine_name) {
-        Some(engine) => Box::new(OllamaLlmAdapter::new(
+    let llm_interface: Arc<dyn LlmInterface> = match ollama_engines.get(llm_engine_name) {
+        Some(engine) => Arc::new(OllamaLlmAdapter::new(
             engine.clone(),
             (*llm_engine_config).clone(),
         )),
         None => match openai_engines.get(llm_engine_name) {
-            Some(engine) => Box::new(OpenAiLlmAdapter::new(
+            Some(engine) => Arc::new(OpenAiLlmAdapter::new(
                 engine.clone(),
                 (*llm_engine_config).clone(),
             )),
@@ -104,8 +104,8 @@ pub fn create_interfaces(
 
     let tts_engine_config = &config_data.pipeline_configs.tts;
     let tts_engine_name = &tts_engine_config.engine_name;
-    let tts_interface: Box<dyn TtsInterface> = match openai_engines.get(tts_engine_name) {
-        Some(engine) => Box::new(OpenAiTtsAdapter::new(
+    let tts_interface: Arc<dyn TtsInterface> = match openai_engines.get(tts_engine_name) {
+        Some(engine) => Arc::new(OpenAiTtsAdapter::new(
             engine.clone(),
             (*tts_engine_config).clone(),
         )),
