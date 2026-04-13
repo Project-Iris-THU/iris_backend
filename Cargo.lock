@@ -1299,6 +1299,7 @@ dependencies = [
  "async-openai",
  "async-trait",
  "base64",
+ "bytes",
  "clap",
  "futures-util",
  "log",
@@ -1307,6 +1308,7 @@ dependencies = [
  "rust-yaml",
  "serde",
  "serde_json",
+ "tokio",
  "url",
 ]
 
