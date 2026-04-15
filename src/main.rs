@@ -21,6 +21,7 @@ pub mod web;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
     let args = parse_arguments();
     let config_data = &mut create_default_config_data();
 

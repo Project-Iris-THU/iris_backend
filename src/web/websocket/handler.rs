@@ -1,7 +1,7 @@
 use crate::data::app_state::AppState;
 use crate::pipeline::pipeline::run;
 use actix_web::{Error, HttpRequest, HttpResponse, get, rt, web};
-use actix_ws::AggregatedMessage;
+use actix_ws::{AggregatedMessage, Message};
 use futures_util::{SinkExt, StreamExt as _};
 use log::debug;
 use tokio::sync::mpsc;
@@ -12,7 +12,7 @@ async fn websocket_handler(
     req: HttpRequest,
     stream: web::Payload,
 ) -> Result<HttpResponse, Error> {
-    let (res, mut session, stream) = actix_ws::handle(&req, stream)?;
+    let (res, mut session, mut stream) = actix_ws::handle(&req, stream)?;
 
     let (tx_in, rx_in) = mpsc::unbounded_channel::<AggregatedMessage>();
 
@@ -25,12 +25,11 @@ async fn websocket_handler(
         .max_continuation_size(2_usize.pow(20));
 
     rt::spawn(async move {
-        // receive messages from websocket
         while let Some(msg) = stream.next().await {
             let msg = match msg {
                 Ok(msg) => msg,
                 Err(e) => {
-                    debug!("{}", e);
+                    debug!("Here: {:?}", e);
                     continue;
                 }
             };
@@ -54,10 +53,10 @@ async fn websocket_handler(
                     session.binary(bin).await.unwrap();
                 }
                 AggregatedMessage::Ping(msg) => {
-                    session.ping(&msg).await.unwrap();
+                    session.pong(&msg).await.unwrap();
                 }
                 AggregatedMessage::Pong(msg) => {
-                    session.pong(&msg).await.unwrap();
+                    session.ping(&msg).await.unwrap();
                 }
                 AggregatedMessage::Close(reason) => {
                     session.close(reason).await.unwrap();

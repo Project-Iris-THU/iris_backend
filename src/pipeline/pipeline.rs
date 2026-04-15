@@ -1,7 +1,7 @@
 use crate::data::config::InterfaceConfig;
 use std::io::Bytes;
 
-use actix_ws::AggregatedMessage;
+use actix_ws::{AggregatedMessage, Message};
 use async_trait::async_trait;
 use log::debug;
 use std::sync::Arc;
@@ -15,13 +15,17 @@ pub async fn run(
     while let Some(msg) = rx_in.recv().await {
         match msg {
             AggregatedMessage::Text(text) => {
+                debug!("Text message received: {}", text);
                 tx_out.send(AggregatedMessage::Text(text)).unwrap();
             }
 
             AggregatedMessage::Binary(bin) => {
                 if !is_jpeg(&bin) {
+                    debug!("Not a jpeg");
                     continue;
                 }
+
+                debug!("Pipeline start");
 
                 let ocr_result = interface_config
                     .ocr_interface
@@ -29,11 +33,15 @@ pub async fn run(
                     .await
                     .unwrap();
 
+                debug!("Ocr finished");
+
                 let llm_result = interface_config
                     .llm_interface
                     .generate_text(ocr_result)
                     .await
                     .unwrap();
+
+                debug!("Llm finished");
 
                 tx_out
                     .send(AggregatedMessage::Text(llm_result.into()))
@@ -41,11 +49,11 @@ pub async fn run(
             }
 
             AggregatedMessage::Ping(msg) => {
-                tx_out.send(AggregatedMessage::Ping(msg)).unwrap();
+                tx_out.send(AggregatedMessage::Pong(msg)).unwrap();
             }
 
             AggregatedMessage::Pong(msg) => {
-                tx_out.send(AggregatedMessage::Pong(msg)).unwrap();
+                tx_out.send(AggregatedMessage::Ping(msg)).unwrap();
             }
 
             AggregatedMessage::Close(reason) => {
