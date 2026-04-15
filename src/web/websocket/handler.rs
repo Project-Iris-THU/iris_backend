@@ -21,8 +21,9 @@ async fn websocket_handler(
     tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
 
     let mut stream = stream
+        .max_frame_size(2_usize.pow(25))
         .aggregate_continuations()
-        .max_continuation_size(2_usize.pow(20));
+        .max_continuation_size(2_usize.pow(25));
 
     rt::spawn(async move {
         while let Some(msg) = stream.next().await {
