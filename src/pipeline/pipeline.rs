@@ -1,6 +1,8 @@
 use crate::data::config::InterfaceConfig;
 use std::io::Bytes;
 
+use crate::data::web::websocket::RequestOpCodes;
+use actix_web::web;
 use actix_ws::{AggregatedMessage, Message};
 use async_trait::async_trait;
 use log::debug;
@@ -12,6 +14,7 @@ pub async fn run(
     tx_out: mpsc::UnboundedSender<AggregatedMessage>,
     interface_config: Arc<InterfaceConfig>,
 ) {
+    let mut last_op_code: RequestOpCodes;
     while let Some(msg) = rx_in.recv().await {
         match msg {
             AggregatedMessage::Text(text) => {

@@ -18,7 +18,10 @@ async fn websocket_handler(
 
     let (tx_out, mut rx_out) = mpsc::unbounded_channel::<AggregatedMessage>();
 
-    tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
+    let pipeline_thread =
+        tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
+
+    pipeline_thread.abort();
 
     let mut stream = stream
         .max_frame_size(2_usize.pow(25))

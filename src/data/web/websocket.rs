@@ -1,13 +1,21 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
-pub struct ControlMessageRequest {
-    op_code: u16,
-    system_prompt: Option<String>,
+#[derive(Deserialize)]
+#[serde(tag = "op_code", rename_all = "snake_case")]
+pub enum RequestOpCodes {
+    CustomPrompt { system_prompt: String },
+    EasyLanguage,
+    VeryEasyLanguage,
+    Summarize,
+    Image { content_type: String },
+    Audio { content_type: String },
+    AbortPipeline,
 }
 
 #[derive(Serialize)]
-pub struct ControlMessageResponse {
-    op_code: u16,
-    error_message: Option<String>,
+#[serde(tag = "op_code", rename_all = "snake_case")]
+pub enum ResponseOpCodes {
+    Audio { content_type: String },
+    Error { error_message: String },
+    Text { text: String },
 }
