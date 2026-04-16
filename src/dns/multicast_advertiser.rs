@@ -3,7 +3,7 @@ use mdns_sd::{ServiceDaemon, ServiceInfo};
 const SERVICE_TYPE: &str = "_iris._tcp.local.";
 const INSTANCE_NAME: &str = "iris";
 const IP_ADDRESS: &str = "192.168.1.1";
-const HOSTNAME: &str = "iris.local.";
+const HOSTNAME: &str = "iris";
 const PORT: u16 = 8080;
 const PROPERTIES: [(&str, &str); 5] = [
     ("path", "/"),
@@ -18,8 +18,8 @@ pub fn create_multicast_advertiser() -> Result<ServiceDaemon, Box<dyn std::error
     let iris_service = ServiceInfo::new(
         SERVICE_TYPE,
         INSTANCE_NAME,
-        IP_ADDRESS,
         HOSTNAME,
+        IP_ADDRESS,
         PORT,
         &PROPERTIES[..],
     )?;
