@@ -28,6 +28,8 @@ async fn websocket_handler(
         .aggregate_continuations()
         .max_continuation_size(2_usize.pow(25));
 
+    let mut session_clone = session.clone();
+
     rt::spawn(async move {
         while let Some(msg) = stream.next().await {
             let msg = match msg {
@@ -38,11 +40,19 @@ async fn websocket_handler(
                 }
             };
 
-            match tx_in.send(msg) {
-                Ok(_) => (),
-                Err(e) => {
-                    debug!("{}", e);
+            match msg {
+                AggregatedMessage::Ping(msg) => {
+                    session_clone.pong(&msg).await.unwrap();
                 }
+                AggregatedMessage::Pong(msg) => {
+                    session_clone.ping(&msg).await.unwrap();
+                }
+                _ => match tx_in.send(msg) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        debug!("{}", e);
+                    }
+                },
             }
         }
     });
