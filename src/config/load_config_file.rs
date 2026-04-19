@@ -257,12 +257,21 @@ pipeline_configs:
     model: "qwen3-vl:8b"
     engine_name: my-ollama
     system_prompts:
-        easy_language: "
-        You are a helpful assistant.
-        Answer the question as concisely as possible.
-        Do not make up answers.
-        You are a vision language model.
-        "
+      easy_language: "
+      You are a helpful assistant.
+      Translate the following text into easy language.
+      Do not include any explanations or additional text.
+      "
+      very_easy_language: "
+      You are a helpful assistant.
+      Translate the following text into very easy language.
+      Do not include any explanations or additional text.
+      "
+      summarize: "
+      You are a helpful assistant.
+      Summarize the following text.
+      Do not include any explanations or additional text.
+      "
     vision_model: true
     enabled: true
   tts:
@@ -327,11 +336,30 @@ pipeline_configs:
                 .system_prompts
                 .easy_language,
             r#"
-        You are a helpful assistant.
-        Answer the question as concisely as possible.
-        Do not make up answers.
-        You are a vision language model.
-        "#
+      You are a helpful assistant.
+      Translate the following text into easy language.
+      Do not include any explanations or additional text.
+      "#
+        );
+        assert_eq!(
+            config_data
+                .pipeline_configs
+                .llm
+                .system_prompts
+                .very_easy_language,
+            r#"
+      You are a helpful assistant.
+      Translate the following text into very easy language.
+      Do not include any explanations or additional text.
+      "#
+        );
+        assert_eq!(
+            config_data.pipeline_configs.llm.system_prompts.summarize,
+            r#"
+      You are a helpful assistant.
+      Summarize the following text.
+      Do not include any explanations or additional text.
+      "#
         );
         assert_eq!(config_data.pipeline_configs.llm.enabled, true);
 
