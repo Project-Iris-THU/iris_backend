@@ -1,5 +1,6 @@
 use crate::data::config::{
-    ConfigData, LlmConfig, MLEngineConfig, MLEngineType, OcrConfig, SttConfig, TlsConfig, TtsConfig,
+    ConfigData, LlmConfig, LlmSystemPrompts, MLEngineConfig, MLEngineType, OcrConfig, SttConfig,
+    TlsConfig, TtsConfig,
 };
 use log::info;
 use rust_yaml::{Value, Yaml};
@@ -99,7 +100,21 @@ pub fn load_config_file<'config_data, R: Read>(
 
             let engine_name = get_string_from_value(llm_config, "engine_name")?;
 
-            let system_prompt = get_string_from_value(llm_config, "system_prompt")?;
+            let system_prompts = match llm_config.get_str("system_prompts") {
+                Some(system_prompts) => {
+                    let easy_language = get_string_from_value(system_prompts, "easy_language")?;
+                    let very_easy_language =
+                        get_string_from_value(system_prompts, "very_easy_language")?;
+                    let summarize = get_string_from_value(system_prompts, "summarize")?;
+
+                    LlmSystemPrompts {
+                        easy_language,
+                        very_easy_language,
+                        summarize,
+                    }
+                }
+                None => Err("System prompts not found in config file")?,
+            };
 
             let vision_model = get_bool_from_value(llm_config, "vision_model")?;
 
@@ -109,7 +124,7 @@ pub fn load_config_file<'config_data, R: Read>(
                 model,
                 vision_model,
                 engine_name,
-                system_prompt,
+                system_prompts,
                 enabled,
             };
         }
@@ -241,12 +256,13 @@ pipeline_configs:
   llm:
     model: "qwen3-vl:8b"
     engine_name: my-ollama
-    system_prompt: "
-    You are a helpful assistant.
-    Answer the question as concisely as possible.
-    Do not make up answers.
-    You are a vision language model.
-    "
+    system_prompts:
+        easy_language: "
+        You are a helpful assistant.
+        Answer the question as concisely as possible.
+        Do not make up answers.
+        You are a vision language model.
+        "
     vision_model: true
     enabled: true
   tts:
@@ -305,13 +321,17 @@ pipeline_configs:
         assert_eq!(config_data.pipeline_configs.llm.vision_model, true);
         assert_eq!(config_data.pipeline_configs.llm.engine_name, "my-ollama");
         assert_eq!(
-            config_data.pipeline_configs.llm.system_prompt,
+            config_data
+                .pipeline_configs
+                .llm
+                .system_prompts
+                .easy_language,
             r#"
-    You are a helpful assistant.
-    Answer the question as concisely as possible.
-    Do not make up answers.
-    You are a vision language model.
-    "#
+        You are a helpful assistant.
+        Answer the question as concisely as possible.
+        Do not make up answers.
+        You are a vision language model.
+        "#
         );
         assert_eq!(config_data.pipeline_configs.llm.enabled, true);
 

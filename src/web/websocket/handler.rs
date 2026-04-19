@@ -1,4 +1,6 @@
 use crate::data::app_state::AppState;
+use crate::data::pipeline::PipelineInputData;
+use crate::data::web::websocket::{RequestOpCodes, ResponseOpCodes};
 use crate::pipeline::pipeline::run;
 use actix_web::{Error, HttpRequest, HttpResponse, get, rt, web};
 use actix_ws::{AggregatedMessage, Message};
@@ -14,14 +16,12 @@ async fn websocket_handler(
 ) -> Result<HttpResponse, Error> {
     let (res, mut session, mut stream) = actix_ws::handle(&req, stream)?;
 
-    let (tx_in, rx_in) = mpsc::unbounded_channel::<AggregatedMessage>();
+    let (tx_in, rx_in) = mpsc::unbounded_channel::<PipelineInputData>();
 
     let (tx_out, mut rx_out) = mpsc::unbounded_channel::<AggregatedMessage>();
 
     let pipeline_thread =
         tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
-
-    pipeline_thread.abort();
 
     let mut stream = stream
         .max_frame_size(2_usize.pow(25))
@@ -47,7 +47,33 @@ async fn websocket_handler(
                 AggregatedMessage::Pong(msg) => {
                     session_clone.ping(&msg).await.unwrap();
                 }
-                _ => match tx_in.send(msg) {
+                AggregatedMessage::Text(text) => {
+                    let data = serde_json::from_str::<RequestOpCodes>(&text);
+
+                    match data {
+                        Ok(data) => {
+                            match data {
+                                RequestOpCodes::AbortPipeline => {
+                                    todo!("Abort pipeline");
+                                }
+                                _ => {
+                                    tx_in.send(PipelineInputData::RequestOpCodes(data)).unwrap();
+                                }
+                            };
+                        }
+                        Err(e) => {
+                            let error_msg = ResponseOpCodes::Error {
+                                error_message: format!("Invalid json: {}", e),
+                            };
+                            session_clone
+                                .text(serde_json::to_string(&error_msg).unwrap())
+                                .await
+                                .unwrap();
+                            debug!("{}", e);
+                        }
+                    }
+                }
+                _ => match tx_in.send(PipelineInputData::AggregatedMessage(msg)) {
                     Ok(_) => (),
                     Err(e) => {
                         debug!("{}", e);

@@ -16,8 +16,12 @@ pub struct OpenAiOcrAdapter {
 
 #[async_trait]
 impl OcrInterface for OpenAiOcrAdapter {
-    async fn recognize_text(&self, image: Bytes) -> Result<String, Box<dyn Error + Send + Sync>> {
-        let image_base64 = format!("data:image/png;base64,{}", STANDARD.encode(image));
+    async fn recognize_text(
+        &self,
+        image: Bytes,
+        image_mime_type: &String,
+    ) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let image_base64 = format!("data:{};base64,{}", image_mime_type, STANDARD.encode(image));
 
         let request = CreateResponseArgs::default()
             .model(self.config.model.clone())

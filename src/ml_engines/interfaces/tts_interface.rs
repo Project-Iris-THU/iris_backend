@@ -5,6 +5,6 @@ use bytes::Bytes;
 pub trait TtsInterface: Send + Sync {
     async fn generate_audio(
         &self,
-        text: &str,
+        text: String,
     ) -> Result<Bytes, Box<dyn std::error::Error + Send + Sync>>;
 }

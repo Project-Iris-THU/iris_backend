@@ -39,11 +39,18 @@ pub struct OcrConfig {
 }
 
 #[derive(Clone)]
+pub struct LlmSystemPrompts {
+    pub easy_language: String,
+    pub very_easy_language: String,
+    pub summarize: String,
+}
+
+#[derive(Clone)]
 pub struct LlmConfig {
     pub model: String,
     pub engine_name: String,
     pub vision_model: bool,
-    pub system_prompt: String,
+    pub system_prompts: LlmSystemPrompts,
     pub enabled: bool,
 }
 
