@@ -9,8 +9,8 @@ pub const OLLAMA_DEFAULT_PORT: u16 = 11434;
 
 pub fn create_default_config_data() -> ConfigData {
     ConfigData {
-        host: "".to_string(),
-        port: 0,
+        host: "0.0.0.0".to_string(),
+        port: 8080,
         tls: TlsConfig {
             enabled: false,
             cert_path: "".to_string(),

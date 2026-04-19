@@ -25,8 +25,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = parse_arguments();
     let config_data = &mut create_default_config_data();
 
-    //let mdns_service = create_multicast_advertiser()?;
-
     if !args.config_file.is_empty() {
         let config_file = match std::fs::File::open(args.config_file) {
             Ok(content) => content,
@@ -37,6 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     load_environment(config_data)?;
+
+    let _mdns_service = create_multicast_advertiser(config_data.port)?;
 
     let interface_config = create_interfaces(config_data)?;
 
