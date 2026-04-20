@@ -72,8 +72,26 @@ pub fn load_environment<'config_data>(
     )?;
 
     set_string_from_env(
-        "IRIS_PIPELINE_LLM_SYSTEM_PROMPT",
-        &mut config_data.pipeline_configs.llm.system_prompt,
+        "IRIS_PIPELINE_LLM_SYSTEM_PROMPT_EASY_LANGUAGE",
+        &mut config_data
+            .pipeline_configs
+            .llm
+            .system_prompts
+            .easy_language,
+    )?;
+
+    set_string_from_env(
+        "IRIS_PIPELINE_LLM_SYSTEM_PROMPT_VERY_EASY_LANGUAGE",
+        &mut config_data
+            .pipeline_configs
+            .llm
+            .system_prompts
+            .very_easy_language,
+    )?;
+
+    set_string_from_env(
+        "IRIS_PIPELINE_LLM_SYSTEM_PROMPT_SUMMARIZE",
+        &mut config_data.pipeline_configs.llm.system_prompts.summarize,
     )?;
 
     set_bool_from_env(

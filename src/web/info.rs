@@ -1,11 +1,5 @@
+use crate::data::web::info::InfoResponse;
 use actix_web::{Responder, get, web};
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct InfoResponse {
-    name: &'static str,
-    version: &'static str,
-}
 
 #[get("/info")]
 pub async fn info() -> Result<impl Responder, actix_web::Error> {

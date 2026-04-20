@@ -14,9 +14,9 @@ pub struct OpenAiTtsAdapter {
 
 #[async_trait]
 impl TtsInterface for OpenAiTtsAdapter {
-    async fn generate_audio(&self, text: &str) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
+    async fn generate_audio(&self, text: String) -> Result<Bytes, Box<dyn Error + Send + Sync>> {
         let request = CreateSpeechRequestArgs::default()
-            .input(text.to_string())
+            .input(text)
             .model(SpeechModel::Other(self.config.model.clone()))
             .build()?;
 

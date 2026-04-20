@@ -16,6 +16,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use url::Url;
 
+enum Engines {
+    Ollama(Ollama),
+    OpenAI(Client<OpenAIConfig>),
+}
+
 pub fn create_interfaces(
     config_data: &ConfigData,
 ) -> Result<InterfaceConfig, Box<dyn std::error::Error>> {
@@ -26,8 +31,7 @@ pub fn create_interfaces(
         config_data.pipeline_configs.tts.engine_name.clone(),
     ];
 
-    let mut ollama_engines = HashMap::new();
-    let mut openai_engines = HashMap::new();
+    let mut engines: HashMap<String, Engines> = HashMap::new();
     for engine_name in used_engine_names {
         let engine_config = match config_data.ml_engines.get(&engine_name) {
             Some(engine_config) => engine_config,
@@ -43,7 +47,7 @@ pub fn create_interfaces(
                 let port = url.port().unwrap_or(OLLAMA_DEFAULT_PORT);
                 let ollama_host = format!("{}://{}", url.scheme(), host);
 
-                ollama_engines.insert(engine_name, Ollama::new(ollama_host, port));
+                engines.insert(engine_name, Engines::Ollama(Ollama::new(ollama_host, port)));
             }
             MLEngineType::OpenAI => {
                 let config = OpenAIConfig::new()
@@ -51,64 +55,70 @@ pub fn create_interfaces(
                     .with_api_key(engine_config.api_key.as_str());
                 let client = Client::with_config(config);
 
-                openai_engines.insert(engine_name, client);
+                engines.insert(engine_name, Engines::OpenAI(client));
             }
         };
     }
 
     let stt_engine_config = &config_data.pipeline_configs.stt;
     let stt_engine_name = &stt_engine_config.engine_name;
-    let stt_interface: Arc<dyn SttInterface> = match openai_engines.get(stt_engine_name) {
-        Some(engine) => Arc::new(OpenAiSttAdapter::new(
-            engine.clone(),
-            (*stt_engine_config).clone(),
-        )),
+    let stt_interface: Arc<dyn SttInterface> = match engines.get(stt_engine_name) {
+        Some(engine) => match engine {
+            Engines::OpenAI(client) => Arc::new(OpenAiSttAdapter::new(
+                client.clone(),
+                (*stt_engine_config).clone(),
+            )),
+            Engines::Ollama(_) => return Err("STT not supported for Ollama engine".into()),
+        },
         None => return Err(format!("Specified STT engine {} not found", stt_engine_name).into()),
     };
 
     let ocr_engine_config = &config_data.pipeline_configs.ocr;
     let ocr_engine_name = &ocr_engine_config.engine_name;
-    let ocr_interface: Arc<dyn OcrInterface> = match ollama_engines.get(ocr_engine_name) {
-        Some(engine) => Arc::new(OllamaOcrAdapter::new(
-            engine.clone(),
-            (*ocr_engine_config).clone(),
-        )),
-        None => match openai_engines.get(ocr_engine_name) {
-            Some(engine) => Arc::new(OpenAiOcrAdapter::new(
-                engine.clone(),
+    let ocr_interface: Arc<dyn OcrInterface> = match engines.get(ocr_engine_name) {
+        Some(engine) => match engine {
+            Engines::Ollama(client) => Arc::new(OllamaOcrAdapter::new(
+                client.clone(),
                 (*ocr_engine_config).clone(),
             )),
-            None => {
-                return Err(format!("Specified OCR engine {} not found", ocr_engine_name).into());
-            }
+            Engines::OpenAI(client) => Arc::new(OpenAiOcrAdapter::new(
+                client.clone(),
+                (*ocr_engine_config).clone(),
+            )),
         },
+        None => {
+            return Err(format!("Specified OCR engine {} not found", ocr_engine_name).into());
+        }
     };
 
     let llm_engine_config = &config_data.pipeline_configs.llm;
     let llm_engine_name = &llm_engine_config.engine_name;
-    let llm_interface: Arc<dyn LlmInterface> = match ollama_engines.get(llm_engine_name) {
-        Some(engine) => Arc::new(OllamaLlmAdapter::new(
-            engine.clone(),
-            (*llm_engine_config).clone(),
-        )),
-        None => match openai_engines.get(llm_engine_name) {
-            Some(engine) => Arc::new(OpenAiLlmAdapter::new(
+    let llm_interface: Arc<dyn LlmInterface> = match engines.get(llm_engine_name) {
+        Some(engine) => match engine {
+            Engines::Ollama(engine) => Arc::new(OllamaLlmAdapter::new(
                 engine.clone(),
                 (*llm_engine_config).clone(),
             )),
-            None => {
-                return Err(format!("Specified LLM engine {} not found", llm_engine_name).into());
-            }
+            Engines::OpenAI(engine) => Arc::new(OpenAiLlmAdapter::new(
+                engine.clone(),
+                (*llm_engine_config).clone(),
+            )),
         },
+        None => {
+            return Err(format!("Specified LLM engine {} not found", llm_engine_name).into());
+        }
     };
 
     let tts_engine_config = &config_data.pipeline_configs.tts;
     let tts_engine_name = &tts_engine_config.engine_name;
-    let tts_interface: Arc<dyn TtsInterface> = match openai_engines.get(tts_engine_name) {
-        Some(engine) => Arc::new(OpenAiTtsAdapter::new(
-            engine.clone(),
-            (*tts_engine_config).clone(),
-        )),
+    let tts_interface: Arc<dyn TtsInterface> = match engines.get(tts_engine_name) {
+        Some(engine) => match engine {
+            Engines::OpenAI(client) => Arc::new(OpenAiTtsAdapter::new(
+                client.clone(),
+                (*tts_engine_config).clone(),
+            )),
+            Engines::Ollama(_) => return Err("TTS not supported for Ollama engine".into()),
+        },
         None => return Err(format!("Specified TTS engine {} not found", tts_engine_name).into()),
     };
 
