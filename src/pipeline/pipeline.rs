@@ -106,6 +106,7 @@ pub async fn run(
                         .send(AggregatedMessage::Text(
                             serde_json::to_string(&ResponseOpCodes::Audio {
                                 content_type: "audio/wav".to_string(),
+                                done: true,
                             })
                             .unwrap()
                             .into(),

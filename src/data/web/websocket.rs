@@ -15,7 +15,7 @@ pub enum RequestOpCodes {
 #[derive(Serialize)]
 #[serde(tag = "op_code", rename_all = "snake_case")]
 pub enum ResponseOpCodes {
-    Audio { content_type: String },
+    Audio { content_type: String, done: bool },
     Error { error_message: String },
     Text { text: String },
 }
