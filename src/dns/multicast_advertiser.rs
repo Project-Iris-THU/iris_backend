@@ -13,7 +13,10 @@ pub fn create_multicast_advertiser(port: u16) -> Result<ServiceDaemon, Box<dyn s
         HOSTNAME,
         "",
         port,
-        &[("txtvers", "1"), ("version", "0.0.1")][..],
+        &[
+            ("name", env!("CARGO_PKG_NAME")),
+            ("version", env!("CARGO_PKG_VERSION")),
+        ][..],
     )?
     .enable_addr_auto();
 
