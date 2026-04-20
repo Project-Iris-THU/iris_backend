@@ -1,5 +1,6 @@
 use crate::data::config::LlmConfig;
 use crate::data::ml_engines::SystemPromptType;
+use crate::ml_engines::helper_functions::system_prompts::match_system_prompt_type;
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use async_openai::{Client, config::OpenAIConfig, types::responses::CreateResponseArgs};
 use async_trait::async_trait;
@@ -17,14 +18,8 @@ impl LlmInterface for OpenAiLlmAdapter {
         prompt: String,
         system_prompt_type: SystemPromptType,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
-        let system_prompt = match system_prompt_type {
-            SystemPromptType::EasyLanguage => self.config.system_prompts.easy_language.clone(),
-            SystemPromptType::VeryEasyLanguage => {
-                self.config.system_prompts.very_easy_language.clone()
-            }
-            SystemPromptType::Summarize => self.config.system_prompts.summarize.clone(),
-            SystemPromptType::CustomPrompt(prompt) => prompt,
-        };
+        let system_prompt =
+            match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
         let request = CreateResponseArgs::default()
             .model(self.config.model.clone())

@@ -3,7 +3,7 @@ use crate::data::ml_engines::SystemPromptType;
 
 pub fn match_system_prompt_type(
     system_prompt_type: SystemPromptType,
-    llm_system_prompts: LlmSystemPrompts,
+    llm_system_prompts: &LlmSystemPrompts,
 ) -> String {
     match system_prompt_type {
         SystemPromptType::EasyLanguage => llm_system_prompts.easy_language.clone(),
