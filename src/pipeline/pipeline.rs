@@ -21,15 +21,19 @@ pub async fn run(
             PipelineInputData::RequestOpCodes(op_code) => {
                 match op_code {
                     RequestOpCodes::EasyLanguage => {
+                        debug!("Easy language");
                         system_prompt_type = SystemPromptType::EasyLanguage;
                     }
                     RequestOpCodes::VeryEasyLanguage => {
+                        debug!("Very easy language");
                         system_prompt_type = SystemPromptType::VeryEasyLanguage;
                     }
                     RequestOpCodes::Summarize => {
+                        debug!("Summarize");
                         system_prompt_type = SystemPromptType::Summarize;
                     }
                     RequestOpCodes::CustomPrompt { system_prompt } => {
+                        debug!("Custom prompt: {}", system_prompt);
                         system_prompt_type = SystemPromptType::CustomPrompt(system_prompt);
                     }
                     _ => {
