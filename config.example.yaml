@@ -34,10 +34,22 @@ pipeline_configs:
   llm:
     model: "qwen3-vl:8b"
     engine_name: my-ollama
-    system_prompt: "
-    You are a helpful assistant.
-    Translate the following text into easy language and do not include any explanations or additional text:
-    "
+    system_prompts:
+      easy_language: "
+      You are a helpful assistant.
+      Translate the following text into easy language. 
+      Do not include any explanations or additional text.
+      "
+      very_easy_language: "
+      You are a helpful assistant.
+      Translate the following text into very easy language. 
+      Do not include any explanations or additional text.
+      "
+      summarize: "
+      You are a helpful assistant.
+      Summarize the following text. 
+      Do not include any explanations or additional text.
+      "
     vision_model: true
     enabled: true
   tts:

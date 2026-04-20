@@ -1,4 +1,6 @@
 use crate::data::config::LlmConfig;
+use crate::data::ml_engines::SystemPromptType;
+use crate::ml_engines::helper_functions::system_prompts::match_system_prompt_type;
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use async_openai::{Client, config::OpenAIConfig, types::responses::CreateResponseArgs};
 use async_trait::async_trait;
@@ -11,10 +13,17 @@ pub struct OpenAiLlmAdapter {
 
 #[async_trait]
 impl LlmInterface for OpenAiLlmAdapter {
-    async fn generate_text(&self, prompt: String) -> Result<String, Box<dyn Error + Send + Sync>> {
+    async fn generate_text(
+        &self,
+        prompt: String,
+        system_prompt_type: SystemPromptType,
+    ) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let system_prompt =
+            match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
+
         let request = CreateResponseArgs::default()
             .model(self.config.model.clone())
-            .prompt(self.config.system_prompt.clone())
+            .prompt(system_prompt)
             .input(prompt)
             .build()?;
 
