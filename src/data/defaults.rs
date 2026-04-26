@@ -2,7 +2,6 @@ use crate::data::config::{
     ConfigData, LlmConfig, LlmSystemPrompts, OcrConfig, PipelineConfigs, SttConfig, TlsConfig,
     TtsConfig,
 };
-use async_openai::types::responses::ServiceTier::Default;
 use std::collections::HashMap;
 
 pub const OLLAMA_DEFAULT_PORT: u16 = 11434;

@@ -1,4 +1,4 @@
-use crate::argument_parser::argument_parser::parse_arguments;
+use crate::argument_parser::parse_arguments;
 use crate::config::interface_creator::create_interfaces;
 use crate::config::load_config_file::load_config_file;
 use crate::config::load_environment::load_environment;

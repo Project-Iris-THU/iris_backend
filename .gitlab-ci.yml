@@ -29,6 +29,13 @@ check_format:
     - rustup component add rustfmt
     - cargo fmt --check
 
+lint:
+  extends: .rust-default
+  stage: check
+  script:
+    - rustup component add clippy
+    - cargo clippy -- -D warnings
+
 build:
   extends: .rust-default
   stage: build

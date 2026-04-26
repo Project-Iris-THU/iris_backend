@@ -2,9 +2,9 @@ use crate::data::config::{ConfigData, MLEngineConfig, MLEngineType};
 use log::{debug, info};
 use std::env;
 
-pub fn load_environment<'config_data>(
-    config_data: &'config_data mut ConfigData,
-) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
+pub fn load_environment(
+    config_data: &mut ConfigData,
+) -> Result<&mut ConfigData, Box<dyn std::error::Error>> {
     info!("Starting to load environment file:");
 
     set_string_from_env("IRIS_HOST", &mut config_data.host)?;
@@ -123,11 +123,11 @@ pub fn load_environment<'config_data>(
     Ok(config_data)
 }
 
-fn parse_ml_engine<'config_data>(
+fn parse_ml_engine(
     engine_id: usize,
-    config_data: &'config_data mut ConfigData,
-) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
-    let name = get_string_from_env(format!("IRIS_ML_ENGINE_{}_NAME", engine_id).as_str(), true)?;
+    config_data: &mut ConfigData,
+) -> Result<&mut ConfigData, Box<dyn std::error::Error>> {
+    let name = get_string_from_env(format!("IRIS_ML_ENGINE_{engine_id}_NAME").as_str(), true)?;
 
     let engine_config_creation_necessary = !config_data.ml_engines.contains_key(&name);
     if engine_config_creation_necessary {
@@ -141,20 +141,20 @@ fn parse_ml_engine<'config_data>(
         );
     }
 
-    let engine_type = set_engine_type_if_key_exists(
-        format!("IRIS_ML_ENGINE_{}_TYPE", engine_id).as_str(),
+    set_engine_type_if_key_exists(
+        format!("IRIS_ML_ENGINE_{engine_id}_TYPE").as_str(),
         &mut config_data.ml_engines.get_mut(&name).unwrap().engine_type,
         !engine_config_creation_necessary,
     )?;
 
-    let url = set_string_if_key_exists(
-        format!("IRIS_ML_ENGINE_{}_URL", engine_id).as_str(),
+    set_string_if_key_exists(
+        format!("IRIS_ML_ENGINE_{engine_id}_URL").as_str(),
         &mut config_data.ml_engines.get_mut(&name).unwrap().url,
         !engine_config_creation_necessary,
     )?;
 
-    let api_key = set_string_if_key_exists(
-        format!("IRIS_ML_ENGINE_{}_API_KEY", engine_id).as_str(),
+    set_string_if_key_exists(
+        format!("IRIS_ML_ENGINE_{engine_id}_API_KEY").as_str(),
         &mut config_data.ml_engines.get_mut(&name).unwrap().api_key,
         !engine_config_creation_necessary,
     )?;
@@ -172,8 +172,8 @@ fn set_string_from_env(
             Ok(())
         }
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
-            debug!("{}", message);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
             Ok(())
         }
     }
@@ -190,9 +190,9 @@ fn set_string_if_key_exists(
             Ok(())
         }
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
             if key_exists {
-                debug!("{}", message);
+                debug!("{message}");
                 Ok(())
             } else {
                 Err(message)?
@@ -208,8 +208,8 @@ fn get_string_from_env(
     match env::var(env_var_name) {
         Ok(value) => Ok(value),
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
-            debug!("{}", message);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
             if mandatory {
                 Err(message)?
             } else {
@@ -229,8 +229,8 @@ fn set_engine_type_if_key_exists(
         "openai" => MLEngineType::OpenAI,
         "ollama" => MLEngineType::Ollama,
         _ => {
-            let message = format!("{}: Unsupported type", env_var_name);
-            debug!("{}", message);
+            let message = format!("{env_var_name}: Unsupported type",);
+            debug!("{message}");
             Err(message)?
         }
     };
@@ -248,8 +248,8 @@ fn set_bool_from_env(
             Ok(())
         }
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
-            debug!("{}", message);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
             Ok(())
         }
     }
@@ -265,8 +265,8 @@ fn set_u16_from_env(
             Ok(())
         }
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
-            debug!("{}", message);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
             Ok(())
         }
     }
@@ -279,8 +279,8 @@ fn get_usize_from_env(
     match env::var(env_var_name) {
         Ok(value) => Ok(value.parse::<usize>()?),
         Err(e) => {
-            let message = format!("{} not found in environment variables: {}", env_var_name, e);
-            debug!("{}", message);
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
             if mandatory { Err(message)? } else { Ok(0) }
         }
     }
