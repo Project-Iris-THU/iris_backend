@@ -1,10 +1,10 @@
 use crate::data::app_state::AppState;
 use crate::data::pipeline::PipelineInputData;
 use crate::data::web::websocket::{RequestOpCodes, ResponseOpCodes};
-use crate::pipeline::pipeline::run;
+use crate::pipeline::run;
 use actix_web::{Error, HttpRequest, HttpResponse, get, rt, web};
-use actix_ws::{AggregatedMessage, Message};
-use futures_util::{SinkExt, StreamExt as _};
+use actix_ws::AggregatedMessage;
+use futures_util::StreamExt as _;
 use log::debug;
 use tokio::sync::mpsc;
 
@@ -14,14 +14,13 @@ async fn websocket_handler(
     req: HttpRequest,
     stream: web::Payload,
 ) -> Result<HttpResponse, Error> {
-    let (res, mut session, mut stream) = actix_ws::handle(&req, stream)?;
+    let (res, mut session, stream) = actix_ws::handle(&req, stream)?;
 
     let (tx_in, rx_in) = mpsc::unbounded_channel::<PipelineInputData>();
 
     let (tx_out, mut rx_out) = mpsc::unbounded_channel::<AggregatedMessage>();
 
-    let pipeline_thread =
-        tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
+    tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
 
     let mut stream = stream
         .max_frame_size(2_usize.pow(25))
@@ -35,7 +34,7 @@ async fn websocket_handler(
             let msg = match msg {
                 Ok(msg) => msg,
                 Err(e) => {
-                    debug!("Here: {:?}", e);
+                    debug!("Here: {e:?}");
                     continue;
                 }
             };
@@ -63,20 +62,20 @@ async fn websocket_handler(
                         }
                         Err(e) => {
                             let error_msg = ResponseOpCodes::Error {
-                                error_message: format!("Invalid json: {}", e),
+                                error_message: format!("Invalid json: {e}"),
                             };
                             session_clone
                                 .text(serde_json::to_string(&error_msg).unwrap())
                                 .await
                                 .unwrap();
-                            debug!("{}", e);
+                            debug!("{e}");
                         }
                     }
                 }
                 _ => match tx_in.send(PipelineInputData::AggregatedMessage(msg)) {
                     Ok(_) => (),
                     Err(e) => {
-                        debug!("{}", e);
+                        debug!("{e}");
                     }
                 },
             }
