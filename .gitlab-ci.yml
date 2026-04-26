@@ -40,6 +40,8 @@ lint:
 build:
   extends: .rust-default
   stage: build
+  before_script:
+    - rustup target add aarch64-unknown-linux-gnu
   script:
     - 'cargo +stable build 
       --verbose 
