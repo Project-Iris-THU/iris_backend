@@ -35,14 +35,14 @@ pub fn create_interfaces(
     for engine_name in used_engine_names {
         let engine_config = match config_data.ml_engines.get(&engine_name) {
             Some(engine_config) => engine_config,
-            None => return Err(format!("Engine {} not found in config", engine_name).into()),
+            None => return Err(format!("Engine {engine_name} not found in config").into()),
         };
         match engine_config.engine_type {
             MLEngineType::Ollama => {
                 let url = Url::parse(&engine_config.url)?;
                 let host = match url.host_str() {
                     Some(host) => host,
-                    None => return Err(format!("Invalid host in url {}", url).into()),
+                    None => return Err(format!("Invalid host in url {url}").into()),
                 };
                 let port = url.port().unwrap_or(OLLAMA_DEFAULT_PORT);
                 let ollama_host = format!("{}://{}", url.scheme(), host);
@@ -70,7 +70,7 @@ pub fn create_interfaces(
             )),
             Engines::Ollama(_) => return Err("STT not supported for Ollama engine".into()),
         },
-        None => return Err(format!("Specified STT engine {} not found", stt_engine_name).into()),
+        None => return Err(format!("Specified STT engine {stt_engine_name} not found").into()),
     };
 
     let ocr_engine_config = &config_data.pipeline_configs.ocr;
@@ -87,7 +87,7 @@ pub fn create_interfaces(
             )),
         },
         None => {
-            return Err(format!("Specified OCR engine {} not found", ocr_engine_name).into());
+            return Err(format!("Specified OCR engine {ocr_engine_name} not found").into());
         }
     };
 
@@ -105,7 +105,7 @@ pub fn create_interfaces(
             )),
         },
         None => {
-            return Err(format!("Specified LLM engine {} not found", llm_engine_name).into());
+            return Err(format!("Specified LLM engine {llm_engine_name} not found").into());
         }
     };
 
@@ -119,7 +119,7 @@ pub fn create_interfaces(
             )),
             Engines::Ollama(_) => return Err("TTS not supported for Ollama engine".into()),
         },
-        None => return Err(format!("Specified TTS engine {} not found", tts_engine_name).into()),
+        None => return Err(format!("Specified TTS engine {tts_engine_name} not found").into()),
     };
 
     Ok(InterfaceConfig {

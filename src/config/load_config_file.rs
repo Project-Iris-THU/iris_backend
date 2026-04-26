@@ -6,10 +6,10 @@ use log::info;
 use rust_yaml::{Value, Yaml};
 use std::io::Read;
 
-pub fn load_config_file<'config_data, R: Read>(
+pub fn load_config_file<R: Read>(
     reader: R,
-    config_data: &'config_data mut ConfigData,
-) -> Result<&'config_data mut ConfigData, Box<dyn std::error::Error>> {
+    config_data: &mut ConfigData,
+) -> Result<&mut ConfigData, Box<dyn std::error::Error>> {
     info!("Starting to load config file:");
     let yaml = Yaml::new();
 
@@ -184,9 +184,9 @@ fn get_string_from_value(value: &Value, key: &str) -> Result<String, Box<dyn std
     match value.get_str(key) {
         Some(value) => match value.as_str() {
             Some(value) => Ok(value.to_string()),
-            None => Err(format!("{} is not a string", key))?,
+            None => Err(format!("{key} is not a string"))?,
         },
-        None => Err(format!("{} not found in config", key))?,
+        None => Err(format!("{key} not found in config"))?,
     }
 }
 
@@ -194,9 +194,9 @@ fn get_bool_from_value(value: &Value, key: &str) -> Result<bool, Box<dyn std::er
     match value.get_str(key) {
         Some(value) => match value.as_bool() {
             Some(value) => Ok(value),
-            None => Err(format!("{} is not a bool", key))?,
+            None => Err(format!("{key} is not a bool"))?,
         },
-        None => Err(format!("{} not found in config", key))?,
+        None => Err(format!("{key} not found in config"))?,
     }
 }
 
@@ -204,9 +204,9 @@ fn get_u16_from_value(value: &Value, key: &str) -> Result<u16, Box<dyn std::erro
     match value.get_str(key) {
         Some(value) => match value.as_int() {
             Some(value) => Ok(value as u16),
-            None => Err(format!("{} is not an int", key))?,
+            None => Err(format!("{key} is not an int"))?,
         },
-        None => Err(format!("{} not found in config", key))?,
+        None => Err(format!("{key} not found in config"))?,
     }
 }
 

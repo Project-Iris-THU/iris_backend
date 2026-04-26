@@ -13,7 +13,6 @@ use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use bytes::Bytes;
 use std::error::Error;
-use std::fmt::format;
 
 pub struct OpenAiOcrAdapter {
     openai_client: Client<OpenAIConfig>,
@@ -22,10 +21,10 @@ pub struct OpenAiOcrAdapter {
 
 #[async_trait]
 impl OcrInterface for OpenAiOcrAdapter {
-    async fn recognize_text(
+    async fn recognize_text<'a>(
         &self,
         image: Bytes,
-        image_mime_type: &String,
+        image_mime_type: &'a str,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
         let image_base64 = format!("data:{};base64,{}", image_mime_type, STANDARD.encode(image));
 
