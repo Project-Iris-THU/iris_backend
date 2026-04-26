@@ -1,4 +1,4 @@
 /target
 
-secret-config.yaml
+secret-config*.yaml
 secret.env

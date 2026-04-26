@@ -106,6 +106,8 @@ pub async fn run(
                         .await
                         .unwrap();
 
+                    debug!("Tts finished");
+
                     tx_out
                         .send(AggregatedMessage::Text(
                             serde_json::to_string(&ResponseOpCodes::Audio {
