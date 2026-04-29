@@ -98,8 +98,8 @@ docker_build_deploy:
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - 'docker buildx build 
-      -t $CI_REGISTRY:latest
-      -t $CI_REGISTRY:$CI_COMMIT_SHORT_SHA
+      -t $CI_REGISTRY_IMAGE:latest
+      -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
       . 
       --platform linux/amd64,linux/arm64 
       --builder=crossplatform 
