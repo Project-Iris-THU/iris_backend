@@ -20,7 +20,7 @@ stages:
     CARGO_HOME: $CI_PROJECT_DIR/cargo
     CACHE_FALLBACK_KEY: $CI_DEFAULT_BRANCH
   before_script:
-    - rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
+    - rustup --version && rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
 
 
 check:format:
