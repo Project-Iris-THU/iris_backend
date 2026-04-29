@@ -20,7 +20,7 @@ stages:
     CARGO_HOME: $CI_PROJECT_DIR/cargo
     CACHE_FALLBACK_KEY: $CI_DEFAULT_BRANCH
   before_script:
-    - rustup --version && rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
+    - rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
 
 
 check:format:
@@ -51,11 +51,11 @@ build:x86_64:
       - target/x86_64-unknown-linux-gnu/release/iris_backend
 
 build:arm64:
-  image: ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest
+  image: messense/cargo-zigbuild
   extends: .rust-default
   stage: build
   script:
-    - 'cargo +stable build 
+    - 'cargo zigbuild 
       --verbose 
       --color always 
       --release
