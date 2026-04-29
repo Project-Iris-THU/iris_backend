@@ -42,7 +42,7 @@ build:x86_64:
   extends: .rust-default
   stage: build
   script:
-    - 'cargo +stable build 
+    - 'cargo +stable zigbuild 
       --verbose 
       --color always 
       --release
