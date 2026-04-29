@@ -38,6 +38,7 @@ check:lint:
     - cargo clippy -- -D warnings
 
 build:x86_64:
+  image: messense/cargo-zigbuild
   extends: .rust-default
   stage: build
   script:
