@@ -45,10 +45,10 @@ build:x86_64:
       --verbose 
       --color always 
       --release
-      --target x86_64-unknown-linux-gnu'
+      --target x86_64-unknown-linux-musl'
   artifacts:
     paths:
-      - target/x86_64-unknown-linux-gnu/release/iris_backend
+      - target/x86_64-unknown-linux-musl/release/iris_backend
 
 build:arm64:
   image: messense/cargo-zigbuild
@@ -59,10 +59,10 @@ build:arm64:
       --verbose 
       --color always 
       --release
-      --target aarch64-unknown-linux-gnu'
+      --target aarch64-unknown-linux-musl'
   artifacts:
     paths:
-      - target/aarch64-unknown-linux-gnu/release/iris_backend
+      - target/aarch64-unknown-linux-musl/release/iris_backend
 
 test:
   extends: .rust-default
