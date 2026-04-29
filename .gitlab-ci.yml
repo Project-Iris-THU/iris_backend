@@ -85,6 +85,8 @@ docker_build_deploy:
   stage: deploy
   tags:
     - shell
+    - docker
+    - linux
   needs:
     - build:x86_64
     - build:arm64
