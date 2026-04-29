@@ -96,7 +96,7 @@ docker_build_deploy:
     - mv target/aarch64-unknown-linux-gnu/release/iris_backend output/arm64/iris_backend
     - mv target/x86_64-unknown-linux-gnu/release/iris_backend output/amd64/iris_backend
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - 'docker buildx build 
       -t $CI_REGISTRY_IMAGE:latest
       -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
