@@ -23,40 +23,52 @@ stages:
     - rustup --version && rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
 
 
-check_format:
+check:format:
   extends: .rust-default
   stage: check
   script:
     - rustup component add rustfmt
     - cargo fmt --check
 
-lint:
+check:lint:
   extends: .rust-default
   stage: check
   script:
     - rustup component add clippy
     - cargo clippy -- -D warnings
 
-build:
+build:x86_64:
   extends: .rust-default
   stage: build
-  before_script:
-    - rustup target add aarch64-unknown-linux-gnu
   script:
     - 'cargo +stable build 
       --verbose 
       --color always 
       --release
-      --target x86_64-unknown-linux-gnu 
+      --target x86_64-unknown-linux-gnu'
+  artifacts:
+    paths:
+      - target/x86_64-unknown-linux-gnu/release/iris_backend
+
+build:arm64:
+  image: ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest
+  extends: .rust-default
+  stage: build
+  script:
+    - 'cargo +stable build 
+      --verbose 
+      --color always 
+      --release
       --target aarch64-unknown-linux-gnu'
   artifacts:
     paths:
-      - target/*/release/iris_backend
+      - target/aarch64-unknown-linux-gnu/release/iris_backend
 
 test:
   extends: .rust-default
   stage: test
-  needs: [ build ]
+  needs:
+    - build:x86_64
   script:
     - 'cargo +nightly test 
       --verbose 
@@ -73,8 +85,9 @@ docker_build_deploy:
   stage: deploy
   tags:
     - shell
-  dependencies:
-    - build
+  needs:
+    - build:x86_64
+    - build:arm64
   before_script:
     - mkdir -p output/arm64
     - mkdir -p output/amd64
