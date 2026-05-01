@@ -55,6 +55,8 @@ build:arm64:
   image: ghcr.io/rust-cross/rust-musl-cross:aarch64-musl
   extends: .rust-default
   stage: build
+  variables:
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-unknown-linux-musl-gcc
   script:
     - 'cargo build 
       --verbose 
