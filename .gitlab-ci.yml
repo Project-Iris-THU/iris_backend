@@ -2,6 +2,7 @@ stages:
   - check
   - build
   - test
+  - deploy
 
 .rust-default:
   image: rust:latest
@@ -9,7 +10,7 @@ stages:
     - linux
     - docker
   cache:
-    - key: $CI_COMMIT_REF
+    - key: "${CI_JOB_IMAGE}-${CI_COMMIT_REF_SLUG}"
       paths: [ target/ ]
     - key: cargo
       paths: [ cargo/ ]
@@ -22,33 +23,55 @@ stages:
     - rustup --version && rustc --version && cargo --version && echo $RUSTFLAGS && echo $CARGO_OPTS
 
 
-check_format:
+check:format:
   extends: .rust-default
   stage: check
   script:
     - rustup component add rustfmt
     - cargo fmt --check
 
-lint:
+check:lint:
   extends: .rust-default
   stage: check
   script:
     - rustup component add clippy
     - cargo clippy -- -D warnings
 
-build:
+build:x86_64:
+  image: ghcr.io/rust-cross/rust-musl-cross:x86_64-musl
   extends: .rust-default
   stage: build
   script:
-    - cargo +stable build --verbose --color always --release
+    - 'cargo build 
+      --verbose 
+      --color always 
+      --release
+      --target x86_64-unknown-linux-musl'
   artifacts:
     paths:
-      - target/release/iris_backend
+      - target/x86_64-unknown-linux-musl/release/iris_backend
+
+build:arm64:
+  image: ghcr.io/rust-cross/rust-musl-cross:aarch64-musl
+  extends: .rust-default
+  stage: build
+  variables:
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-unknown-linux-musl-gcc
+  script:
+    - 'cargo build 
+      --verbose 
+      --color always 
+      --release
+      --target aarch64-unknown-linux-musl'
+  artifacts:
+    paths:
+      - target/aarch64-unknown-linux-musl/release/iris_backend
 
 test:
   extends: .rust-default
   stage: test
-  needs: [ build ]
+  needs:
+    - build:x86_64
   script:
     - 'cargo +nightly test 
       --verbose 
@@ -60,3 +83,34 @@ test:
     when: always
     reports:
       junit: results.xml
+
+docker_build_deploy:
+  stage: deploy
+  tags:
+    - shell
+    - docker_buildx
+    - linux
+  needs:
+    - build:x86_64
+    - build:arm64
+  before_script:
+    - mkdir -p output/arm64
+    - mkdir -p output/amd64
+    - mv target/aarch64-unknown-linux-musl/release/iris_backend output/arm64/iris_backend
+    - mv target/x86_64-unknown-linux-musl/release/iris_backend output/amd64/iris_backend
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        TAG="latest"
+      else
+        TAG="$CI_COMMIT_REF_SLUG"
+      fi
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - 'docker buildx build 
+      -t $CI_REGISTRY_IMAGE:$TAG
+      -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      . 
+      --platform linux/amd64,linux/arm64 
+      --builder=crossplatform 
+      --file docker/Dockerfile 
+      --push'
