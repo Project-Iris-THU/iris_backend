@@ -10,7 +10,7 @@ stages:
     - linux
     - docker
   cache:
-    - key: $CI_COMMIT_REF
+    - key: "${CI_JOB_IMAGE}-${CI_COMMIT_REF_SLUG}"
       paths: [ target/ ]
     - key: cargo
       paths: [ cargo/ ]
