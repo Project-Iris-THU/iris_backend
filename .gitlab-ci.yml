@@ -98,10 +98,16 @@ docker_build_deploy:
     - mkdir -p output/amd64
     - mv target/aarch64-unknown-linux-musl/release/iris_backend output/arm64/iris_backend
     - mv target/x86_64-unknown-linux-musl/release/iris_backend output/amd64/iris_backend
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        TAG="latest"
+      else
+        TAG="$CI_COMMIT_REF_SLUG"
+      fi
   script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - 'docker buildx build 
-      -t $CI_REGISTRY_IMAGE:latest
+      -t $CI_REGISTRY_IMAGE:$TAG
       -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
       . 
       --platform linux/amd64,linux/arm64 
