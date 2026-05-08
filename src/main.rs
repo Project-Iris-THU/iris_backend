@@ -9,6 +9,7 @@ use crate::web::websocket::handler::websocket_handler;
 use actix_web::web as actix_web_web;
 use actix_web::{App, HttpServer};
 use data::defaults::create_default_config_data;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use std::sync::Arc;
 
 pub mod argument_parser;
@@ -40,17 +41,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let interface_config = create_interfaces(config_data)?;
 
-    HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         App::new()
             .app_data(actix_web_web::Data::new(AppState {
                 interfaces: Arc::new(interface_config.clone()),
             }))
             .service(info)
             .service(websocket_handler)
-    })
-    .bind((config_data.host.clone(), config_data.port))?
-    .run()
-    .await?;
+    });
+
+    let host = &config_data.host;
+    let port = config_data.port;
+
+    if config_data.tls.enabled {
+        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
+        builder.set_private_key_file(&config_data.tls.key_path, SslFiletype::PEM)?;
+        builder.set_certificate_chain_file(&config_data.tls.cert_path)?;
+        server = server.bind_openssl(format!("{host}:{port}"), builder)?
+    } else {
+        server = server.bind((config_data.host.clone(), config_data.port))?;
+    }
+
+    server.run().await?;
 
     Ok(())
 }
