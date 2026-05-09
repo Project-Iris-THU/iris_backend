@@ -71,7 +71,7 @@ impl LlmInterface for OpenAiLlmAdapter {
                     ResponseStreamEvent::ResponseOutputTextDelta(delta) => {
                         let text = &delta.delta;
 
-                        sentence_buffer.push_str(&text);
+                        sentence_buffer.push_str(text);
 
                         if text.contains(['.', '!', '?']) {
                             let sentence = sentence_buffer.trim().to_string();

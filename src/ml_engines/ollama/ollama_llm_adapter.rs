@@ -49,8 +49,8 @@ impl LlmInterface for OllamaLlmAdapter {
         while let Some(res) = stream.next().await {
             let chunks = res?;
             for ele in chunks {
-                let text = ele.response;
-                sentence_buffer.push_str(&text);
+                let text = &ele.response;
+                sentence_buffer.push_str(text);
 
                 if text.contains(['.', '!', '?']) {
                     let sentence = sentence_buffer.trim().to_string();
