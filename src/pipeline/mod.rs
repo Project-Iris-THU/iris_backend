@@ -2,16 +2,19 @@ use crate::data::config::InterfaceConfig;
 use crate::data::ml_engines::SystemPromptType;
 use crate::data::pipeline::PipelineInputData;
 use crate::data::web::websocket::{RequestOpCodes, ResponseOpCodes};
+use crate::helper::image::ImageHelper;
 use actix_ws::AggregatedMessage;
-use log::debug;
+use log::{debug, error};
 use std::sync::Arc;
 use tokio::sync::mpsc;
+
+const BUFFER_SIZE: usize = 1024;
 
 pub async fn run(
     mut rx_in: mpsc::UnboundedReceiver<PipelineInputData>,
     tx_out: mpsc::UnboundedSender<AggregatedMessage>,
     interface_config: Arc<InterfaceConfig>,
-) {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut last_op_code: Option<RequestOpCodes> = None;
     let mut system_prompt_type = SystemPromptType::EasyLanguage;
     while let Some(msg) = rx_in.recv().await {
@@ -84,155 +87,72 @@ pub async fn run(
                     let ocr_result = interface_config
                         .ocr_interface
                         .recognize_text(bin, content_type)
-                        .await
-                        .unwrap();
+                        .await?;
 
                     debug!("Ocr finished");
 
-                    let llm_result = interface_config
-                        .llm_interface
-                        .generate_text(ocr_result, system_prompt_type.clone())
-                        .await
-                        .unwrap();
+                    let (llm_out_channel, mut tts_in_channel) =
+                        mpsc::channel::<String>(BUFFER_SIZE);
+
+                    let system_prompt_type_clone = system_prompt_type.clone();
+                    let llm_interface_clone = interface_config.llm_interface.clone();
+                    tokio::spawn(async move {
+                        if let Err(e) = llm_interface_clone
+                            .generate_text_stream(
+                                ocr_result,
+                                &system_prompt_type_clone,
+                                llm_out_channel,
+                            )
+                            .await
+                        {
+                            error!("{e}");
+                        }
+                    });
 
                     debug!("Llm finished");
 
-                    let tts_result = interface_config
-                        .tts_interface
-                        .generate_audio(llm_result)
-                        .await
-                        .unwrap();
+                    while let Some(chunk) = tts_in_channel.recv().await {
+                        let tts_result =
+                            interface_config.tts_interface.generate_audio(chunk).await?;
 
-                    debug!("Tts finished");
-
-                    tx_out
-                        .send(AggregatedMessage::Text(
+                        tx_out.send(AggregatedMessage::Text(
                             serde_json::to_string(&ResponseOpCodes::Audio {
                                 content_type: "audio/wav".to_string(),
-                                done: true,
-                            })
-                            .unwrap()
+                                done: false,
+                            })?
                             .into(),
-                        ))
-                        .unwrap();
+                        ))?;
 
-                    tx_out.send(AggregatedMessage::Binary(tts_result)).unwrap();
+                        tx_out.send(AggregatedMessage::Binary(tts_result))?;
+                    }
+
+                    tx_out.send(AggregatedMessage::Text(
+                        serde_json::to_string(&ResponseOpCodes::Audio {
+                            content_type: "audio/wav".to_string(),
+                            done: true,
+                        })?
+                        .into(),
+                    ))?;
+
+                    debug!("Tts finished");
                 }
 
                 AggregatedMessage::Ping(msg) => {
-                    tx_out.send(AggregatedMessage::Pong(msg)).unwrap();
+                    tx_out.send(AggregatedMessage::Pong(msg))?;
                 }
 
                 AggregatedMessage::Pong(msg) => {
-                    tx_out.send(AggregatedMessage::Ping(msg)).unwrap();
+                    tx_out.send(AggregatedMessage::Ping(msg))?;
                 }
 
                 AggregatedMessage::Close(reason) => {
                     debug!("{reason:?}");
-                    tx_out.send(AggregatedMessage::Close(reason)).unwrap();
+                    tx_out.send(AggregatedMessage::Close(reason))?;
                     break;
                 }
             },
         }
     }
-}
 
-struct ImageHelper;
-impl ImageHelper {
-    fn is_jpeg(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0xFF, 0xD8, 0xFF])
-    }
-
-    fn is_png(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
-    }
-
-    fn is_webp(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0x52, 0x49, 0x46, 0x46])
-    }
-
-    fn is_gif(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0x47, 0x49, 0x46, 0x38])
-    }
-
-    fn is_heic(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
-    }
-
-    fn is_heif(bytes: &[u8]) -> bool {
-        bytes.starts_with(&[0x49, 0x49, 0x2A, 0x00])
-    }
-
-    fn check_image_content_type(
-        bytes: &[u8],
-        content_type: &String,
-        tx_out: &mpsc::UnboundedSender<AggregatedMessage>,
-    ) -> Result<(), String> {
-        match content_type.as_str() {
-            "image/jpeg" => {
-                if !ImageHelper::is_jpeg(bytes) {
-                    let msg = "Image is not jpeg".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            "image/png" => {
-                if !ImageHelper::is_png(bytes) {
-                    let msg = "Image is not png".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            "image/webp" => {
-                if !ImageHelper::is_webp(bytes) {
-                    let msg = "Image is not webp".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            "image/gif" => {
-                if !ImageHelper::is_gif(bytes) {
-                    let msg = "Image is not gif".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            "image/heic" => {
-                if !ImageHelper::is_heic(bytes) {
-                    let msg = "Image is not heic".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            "image/heif" => {
-                if !ImageHelper::is_heif(bytes) {
-                    let msg = "Image is not heif".to_string();
-                    debug!("{msg}");
-                    send_error_message(msg.clone(), tx_out);
-                    return Err(msg);
-                }
-            }
-            _ => {
-                let msg = format!("Unsupported content type: {content_type}");
-                debug!("{msg}");
-                send_error_message(msg.clone(), tx_out);
-                return Err(msg);
-            }
-        }
-        Ok(())
-    }
-}
-
-fn send_error_message(msg: String, tx_out: &mpsc::UnboundedSender<AggregatedMessage>) {
-    let msg_op_code = ResponseOpCodes::Error { error_message: msg };
-    tx_out
-        .send(AggregatedMessage::Text(
-            serde_json::to_string(&msg_op_code).unwrap().into(),
-        ))
-        .unwrap();
+    Ok(())
 }

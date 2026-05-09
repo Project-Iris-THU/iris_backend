@@ -16,6 +16,7 @@ pub mod argument_parser;
 pub mod config;
 pub mod data;
 pub mod dns;
+pub mod helper;
 pub mod ml_engines;
 pub mod pipeline;
 pub mod web;
