@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use futures_util::StreamExt;
 use ollama_rs::generation::completion::request::GenerationRequest;
 use std::error::Error;
-use std::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 
 pub struct OllamaLlmAdapter {
     ollama_client: ollama_rs::Ollama,
@@ -18,7 +18,7 @@ impl LlmInterface for OllamaLlmAdapter {
     async fn generate_text(
         &self,
         prompt: String,
-        system_prompt_type: SystemPromptType,
+        system_prompt_type: &SystemPromptType,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
@@ -33,8 +33,8 @@ impl LlmInterface for OllamaLlmAdapter {
     async fn generate_text_stream(
         &self,
         prompt: String,
-        system_prompt_type: SystemPromptType,
-        output_channel: mpsc::Sender<String>,
+        system_prompt_type: &SystemPromptType,
+        output_channel: Sender<String>,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
@@ -55,7 +55,7 @@ impl LlmInterface for OllamaLlmAdapter {
                 if text.contains(['.', '!', '?']) {
                     let sentence = sentence_buffer.trim().to_string();
                     if !sentence.is_empty() {
-                        output_channel.send(sentence)?;
+                        output_channel.send(sentence).await?;
                         sentence_buffer.clear();
                     }
                 }
@@ -63,7 +63,9 @@ impl LlmInterface for OllamaLlmAdapter {
         }
 
         if !sentence_buffer.is_empty() {
-            let _ = output_channel.send(sentence_buffer.trim().to_string())?;
+            let _ = output_channel
+                .send(sentence_buffer.trim().to_string())
+                .await?;
         }
 
         Ok(())
