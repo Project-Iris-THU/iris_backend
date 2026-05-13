@@ -57,7 +57,7 @@ impl AudioHelper {
                 }
             }
             "audio/ogg" => {
-                if !AudioHelper::is_flac(bytes) {
+                if !AudioHelper::is_ogg(bytes) {
                     let msg = "Audio is not ogg".to_string();
                     send_error_message(msg.clone(), tx_out);
                     return Err(msg);

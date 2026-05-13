@@ -21,10 +21,10 @@ pub struct OpenAiOcrAdapter {
 
 #[async_trait]
 impl OcrInterface for OpenAiOcrAdapter {
-    async fn recognize_text<'a>(
+    async fn recognize_text(
         &self,
         image: Bytes,
-        image_mime_type: &'a str,
+        image_mime_type: &String,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
         let image_base64 = format!("data:{};base64,{}", image_mime_type, STANDARD.encode(image));
 
