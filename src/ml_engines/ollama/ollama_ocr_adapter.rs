@@ -15,10 +15,10 @@ pub struct OllamaOcrAdapter {
 
 #[async_trait]
 impl OcrInterface for OllamaOcrAdapter {
-    async fn recognize_text(
+    async fn recognize_text<'a>(
         &self,
         image: Bytes,
-        _: &String,
+        _: &'a str,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
         let image = Image::from_base64(STANDARD.encode(image));
         let request =
