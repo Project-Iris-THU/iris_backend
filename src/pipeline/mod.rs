@@ -2,9 +2,11 @@ use crate::data::config::InterfaceConfig;
 use crate::data::ml_engines::SystemPromptType;
 use crate::data::pipeline::PipelineInputData;
 use crate::data::web::websocket::{RequestOpCodes, ResponseOpCodes};
+use crate::helper::audio::AudioHelper;
 use crate::helper::image::ImageHelper;
 use actix_ws::AggregatedMessage;
 use log::{debug, error};
+use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
@@ -14,9 +16,12 @@ pub async fn run(
     mut rx_in: mpsc::UnboundedReceiver<PipelineInputData>,
     tx_out: mpsc::UnboundedSender<AggregatedMessage>,
     interface_config: Arc<InterfaceConfig>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut last_op_code: Option<RequestOpCodes> = None;
     let mut system_prompt_type = SystemPromptType::EasyLanguage;
+    let mut stt_handle = None;
+    let mut ocr_handle;
+
     while let Some(msg) = rx_in.recv().await {
         match msg {
             PipelineInputData::RequestOpCodes(op_code) => {
@@ -46,15 +51,32 @@ pub async fn run(
             PipelineInputData::AggregatedMessage(msg) => match msg {
                 AggregatedMessage::Text(text) => {
                     debug!("Text message received: {text}");
-                    tx_out.send(AggregatedMessage::Text(text)).unwrap();
+                    tx_out.send(AggregatedMessage::Text(text))?;
                 }
 
                 AggregatedMessage::Binary(bin) => {
-                    let content_type = match &last_op_code {
+                    match &last_op_code {
                         Some(RequestOpCodes::Audio {
-                            content_type: _content_type,
+                            content_type: this_content_type,
                         }) => {
-                            todo!("Audio pipeline");
+                            match AudioHelper::check_audio_content_type(
+                                &bin,
+                                this_content_type,
+                                &tx_out,
+                            ) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    debug!("{e}");
+                                    continue;
+                                }
+                            };
+
+                            let stt_interface_clone = interface_config.stt_interface.clone();
+                            stt_handle = Some(tokio::spawn(async move {
+                                debug!("STT started");
+                                stt_interface_clone.recognize_speech(bin).await
+                            }));
+                            continue;
                         }
                         Some(RequestOpCodes::Image {
                             content_type: this_content_type,
@@ -70,7 +92,15 @@ pub async fn run(
                                     continue;
                                 }
                             };
-                            this_content_type
+
+                            let ocr_interface_clone = interface_config.ocr_interface.clone();
+                            let content_type_clone = this_content_type.clone();
+                            ocr_handle = Some(tokio::spawn(async move {
+                                debug!("OCR started");
+                                ocr_interface_clone
+                                    .recognize_text(bin, &content_type_clone)
+                                    .await
+                            }));
                         }
                         Some(_) => {
                             debug!("Not an audio or image message");
@@ -84,12 +114,24 @@ pub async fn run(
 
                     debug!("Pipeline start");
 
-                    let ocr_result = interface_config
-                        .ocr_interface
-                        .recognize_text(bin, content_type)
-                        .await?;
+                    let transcription_text = if let Some(h) = stt_handle {
+                        h.await??
+                    } else {
+                        String::from("")
+                    };
+                    debug!("STT finished");
 
-                    debug!("Ocr finished");
+                    let ocr_text = if let Some(h) = ocr_handle {
+                        h.await??
+                    } else {
+                        String::from("")
+                    };
+                    debug!("OCR finished");
+
+                    stt_handle = None;
+
+                    let llm_input_text =
+                        format!("Ocr result: {ocr_text}\n User command: {transcription_text}");
 
                     let (llm_out_channel, mut tts_in_channel) =
                         mpsc::channel::<String>(BUFFER_SIZE);
@@ -99,7 +141,7 @@ pub async fn run(
                     tokio::spawn(async move {
                         if let Err(e) = llm_interface_clone
                             .generate_text_stream(
-                                ocr_result,
+                                llm_input_text,
                                 &system_prompt_type_clone,
                                 llm_out_channel,
                             )
