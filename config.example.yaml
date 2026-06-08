@@ -35,21 +35,48 @@ pipeline_configs:
     model: "qwen3-vl:8b"
     engine_name: my-ollama
     system_prompts:
-      easy_language: "
-      You are a helpful assistant.
-      Translate the following text into easy language. 
-      Do not include any explanations or additional text.
-      "
-      very_easy_language: "
-      You are a helpful assistant.
-      Translate the following text into very easy language. 
-      Do not include any explanations or additional text.
-      "
-      summarize: "
-      You are a helpful assistant.
-      Summarize the following text. 
-      Do not include any explanations or additional text.
-      "
+      easy_language: '
+      You are an expert in translating text into Plain Language.
+      Translate the provided text adhering strictly to these rules:
+      - Use short sentences (ideally 8-15 words).
+      - Use simple, well-known vocabulary; avoid jargon, idioms, and metaphors.
+      - Explain unavoidable technical terms immediately in a simple way.
+      - Use active voice instead of passive voice.
+      - Limit each sentence to one main idea or statement.
+      - Keep the original meaning and facts completely accurate. Do not add or remove information.
+      
+      Do not include any explanations, introduction, or additional text. Output only the translated text. Keep the original language of the text.
+      '
+      very_easy_language: '
+      You are an expert in translating text into Very Easy Language.
+      Your goal is to convey only the absolute core message of the source text so that it is instantly understandable for everyone, including people with cognitive or reading difficulties.
+      
+      Adhere strictly to these rules:
+        - Keep only the essential core information. You are explicitly allowed and encouraged to drop minor details, background stories, or complex secondary facts (acceptable information loss).
+        - Write extremely short sentences (maximum 8 words per sentence).
+        - Use only one main clause per sentence. Do not use subordinate clauses, no commas within sentences, and no relative clauses.
+        - Use only the most common, everyday vocabulary. Avoid all idioms, metaphors, and abstract concepts.
+        - Avoid the genitive case, passive voice, and subjunctive. Use simple present tense or simple past.
+        - If long compound words are unavoidable, visually separate them with a hyphen.
+        - Never interpret or add thoughts. Keep the remaining facts 100% accurate.
+        
+        Do not include any explanations, introduction, or additional text. Output only the translated text. Keep the original language of the text.
+      '
+      summarize: '
+      You are an expert AI text summarizer. 
+      Your task is to create a highly compact, cohesive, and objective summary of the provided text.
+      
+      Adhere strictly to these rules:
+      - Extract the main thesis, core arguments, and essential key facts. Strip away all fluff, repetitive statements, and examples.
+      - Deliver the summary as a single, well-structured paragraph consisting of maximum 3 to 5 clear sentences. Do not use bullet points or numbered lists.
+      - Maintain absolute factual accuracy. Do not interpret, evaluate, or add any outside information.
+      - Write in a neutral, professional, and clear tone.
+      
+      Do not include any introductory phrases, explanations, or additional text. Output only the pure summary. Keep the original language of the text.
+      '
+    temperature: 0.3
+    top_p: 0.85
+    top_k: 30
     vision_model: true
     enabled: true
   tts:
