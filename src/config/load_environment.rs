@@ -94,6 +94,21 @@ pub fn load_environment(
         &mut config_data.pipeline_configs.llm.system_prompts.summarize,
     )?;
 
+    set_option_f32_from_env(
+        "IRIS_PIPELINE_LLM_TEMPERATURE",
+        &mut config_data.pipeline_configs.llm.temperature,
+    )?;
+
+    set_option_f32_from_env(
+        "IRIS_PIPELINE_LLM_TOP_P",
+        &mut config_data.pipeline_configs.llm.top_p,
+    )?;
+
+    set_option_u8_from_env(
+        "IRIS_PIPELINE_LLM_TOP_K",
+        &mut config_data.pipeline_configs.llm.top_k,
+    )?;
+
     set_bool_from_env(
         "IRIS_PIPELINE_LLM_VISION_MODEL",
         &mut config_data.pipeline_configs.llm.vision_model,
@@ -272,6 +287,40 @@ fn set_u16_from_env(
     }
 }
 
+fn set_option_u8_from_env(
+    env_var_name: &str,
+    destination: &mut Option<u8>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            *destination = Some(value.parse::<u8>()?);
+            Ok(())
+        }
+        Err(e) => {
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
+            Ok(())
+        }
+    }
+}
+
+fn set_option_f32_from_env(
+    env_var_name: &str,
+    destination: &mut Option<f32>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match env::var(env_var_name) {
+        Ok(value) => {
+            *destination = Some(value.parse::<f32>()?);
+            Ok(())
+        }
+        Err(e) => {
+            let message = format!("{env_var_name} not found in environment variables: {e}");
+            debug!("{message}");
+            Ok(())
+        }
+    }
+}
+
 fn get_usize_from_env(
     env_var_name: &str,
     mandatory: bool,
@@ -320,6 +369,9 @@ mod tests {
             env::set_var("IRIS_PIPELINE_LLM_MODEL", "qwen3-vl:8b");
             env::set_var("IRIS_PIPELINE_LLM_ENGINE_NAME", "my-ollama");
             env::set_var("IRIS_PIPELINE_LLM_VISION_MODEL", "true");
+            env::set_var("IRIS_PIPELINE_LLM_TEMPERATURE", "0.3");
+            env::set_var("IRIS_PIPELINE_LLM_TOP_P", "0.85");
+            env::set_var("IRIS_PIPELINE_LLM_TOP_K", "30");
             env::set_var("IRIS_PIPELINE_LLM_ENGINE_ENABLED", "true");
             env::set_var("IRIS_PIPELINE_TTS_MODEL", "qwen3-tts");
             env::set_var("IRIS_PIPELINE_TTS_ENGINE_NAME", "my-openai");
@@ -395,6 +447,9 @@ mod tests {
         assert_eq!(config_data.pipeline_configs.llm.model, "qwen3-vl:8b");
         assert_eq!(config_data.pipeline_configs.llm.vision_model, true);
         assert_eq!(config_data.pipeline_configs.llm.engine_name, "my-ollama");
+        assert_eq!(config_data.pipeline_configs.llm.temperature, Some(0.3));
+        assert_eq!(config_data.pipeline_configs.llm.top_p, Some(0.85));
+        assert_eq!(config_data.pipeline_configs.llm.top_k, Some(30));
         assert_eq!(config_data.pipeline_configs.llm.enabled, true);
 
         assert_eq!(config_data.pipeline_configs.tts.model, "qwen3-tts");
