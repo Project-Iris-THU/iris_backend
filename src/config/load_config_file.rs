@@ -116,6 +116,12 @@ pub fn load_config_file<R: Read>(
                 None => Err("System prompts not found in config file")?,
             };
 
+            let temperature = Some(get_f32_from_value(llm_config, "temperature")?);
+
+            let top_p = Some(get_f32_from_value(llm_config, "top_p")?);
+
+            let top_k = Some(get_u8_from_value(llm_config, "top_k")?);
+
             let vision_model = get_bool_from_value(llm_config, "vision_model")?;
 
             let enabled = get_bool_from_value(llm_config, "enabled")?;
@@ -124,6 +130,9 @@ pub fn load_config_file<R: Read>(
                 model,
                 vision_model,
                 engine_name,
+                temperature,
+                top_p,
+                top_k,
                 system_prompts,
                 enabled,
             };
@@ -210,6 +219,26 @@ fn get_u16_from_value(value: &Value, key: &str) -> Result<u16, Box<dyn std::erro
     }
 }
 
+fn get_u8_from_value(value: &Value, key: &str) -> Result<u8, Box<dyn std::error::Error>> {
+    match value.get_str(key) {
+        Some(value) => match value.as_int() {
+            Some(value) => Ok(value as u8),
+            None => Err(format!("{key} is not an int"))?,
+        },
+        None => Err(format!("{key} not found in config"))?,
+    }
+}
+
+fn get_f32_from_value(value: &Value, key: &str) -> Result<f32, Box<dyn std::error::Error>> {
+    match value.get_str(key) {
+        Some(value) => match value.as_float() {
+            Some(value) => Ok(value as f32),
+            None => Err(format!("{key} is not an int"))?,
+        },
+        None => Err(format!("{key} not found in config"))?,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,6 +301,9 @@ pipeline_configs:
       Summarize the following text.
       Do not include any explanations or additional text.
       "
+    temperature: 0.3
+    top_p: 0.85
+    top_k: 30
     vision_model: true
     enabled: true
   tts:
@@ -361,6 +393,9 @@ pipeline_configs:
       Do not include any explanations or additional text.
       "#
         );
+        assert_eq!(config_data.pipeline_configs.llm.temperature, Some(0.3));
+        assert_eq!(config_data.pipeline_configs.llm.top_p, Some(0.85));
+        assert_eq!(config_data.pipeline_configs.llm.top_k, Some(30));
         assert_eq!(config_data.pipeline_configs.llm.enabled, true);
 
         assert_eq!(config_data.pipeline_configs.tts.model, "qwen3-tts");
