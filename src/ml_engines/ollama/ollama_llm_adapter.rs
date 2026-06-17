@@ -5,6 +5,7 @@ use crate::ml_engines::interfaces::llm_interface::LlmInterface;
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use ollama_rs::generation::completion::request::GenerationRequest;
+use ollama_rs::models::ModelOptions;
 use std::error::Error;
 use tokio::sync::mpsc::Sender;
 
@@ -23,8 +24,11 @@ impl LlmInterface for OllamaLlmAdapter {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
-        let request =
-            GenerationRequest::new(self.config.model.clone(), prompt).system(system_prompt);
+        let options = self.set_options_from_config();
+
+        let request = GenerationRequest::new(self.config.model.clone(), prompt)
+            .system(system_prompt)
+            .options(options);
 
         let response = self.ollama_client.generate(request).await?;
         Ok(response.response)
@@ -39,8 +43,11 @@ impl LlmInterface for OllamaLlmAdapter {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
-        let request =
-            GenerationRequest::new(self.config.model.clone(), prompt).system(system_prompt);
+        let options = self.set_options_from_config();
+
+        let request = GenerationRequest::new(self.config.model.clone(), prompt)
+            .system(system_prompt)
+            .options(options);
 
         let mut stream = self.ollama_client.generate_stream(request).await?;
 
@@ -78,5 +85,23 @@ impl OllamaLlmAdapter {
             ollama_client,
             config,
         }
+    }
+
+    fn set_options_from_config(&self) -> ModelOptions {
+        let mut options = ModelOptions::default();
+
+        if let Some(temp) = self.config.temperature {
+            options = options.temperature(temp);
+        };
+
+        if let Some(top_p) = self.config.top_p {
+            options = options.top_p(top_p);
+        };
+
+        if let Some(top_k) = self.config.top_k {
+            options = options.top_k(top_k as u32);
+        };
+
+        options
     }
 }

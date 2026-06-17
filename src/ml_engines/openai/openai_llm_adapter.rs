@@ -51,7 +51,11 @@ impl LlmInterface for OpenAiLlmAdapter {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
-        let request = CreateResponseArgs::default()
+        let mut request_args = CreateResponseArgs::default();
+
+        self.set_options_from_config(&mut request_args);
+
+        let request = request_args
             .model(self.config.model.clone())
             .prompt(system_prompt)
             .input(prompt)
@@ -107,5 +111,15 @@ impl OpenAiLlmAdapter {
             openai_client,
             config,
         }
+    }
+
+    fn set_options_from_config(&self, args: &mut CreateResponseArgs) {
+        if let Some(temp) = self.config.temperature {
+            args.temperature(temp);
+        };
+
+        if let Some(top_p) = self.config.top_p {
+            args.top_p(top_p);
+        };
     }
 }

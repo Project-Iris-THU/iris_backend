@@ -51,6 +51,9 @@ pub struct LlmConfig {
     pub engine_name: String,
     pub vision_model: bool,
     pub system_prompts: LlmSystemPrompts,
+    pub temperature: Option<f32>,
+    pub top_p: Option<f32>,
+    pub top_k: Option<u8>,
     pub enabled: bool,
 }
 
