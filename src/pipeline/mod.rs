@@ -5,6 +5,7 @@ use crate::data::web::websocket::{RequestOpCodes, ResponseOpCodes};
 use crate::helper::audio::AudioHelper;
 use crate::helper::image::ImageHelper;
 use actix_ws::AggregatedMessage;
+use bytes::Bytes;
 use log::{debug, error};
 use std::error::Error;
 use std::sync::Arc;
@@ -153,28 +154,37 @@ pub async fn run(
 
                     debug!("Llm finished");
 
+                    let mut sentence_buffer = String::new();
+
                     while let Some(chunk) = tts_in_channel.recv().await {
-                        let tts_result =
-                            interface_config.tts_interface.generate_audio(chunk).await?;
+                        sentence_buffer.push_str(&chunk);
+                        send_text(&tx_out, &chunk, false)?;
 
-                        tx_out.send(AggregatedMessage::Text(
-                            serde_json::to_string(&ResponseOpCodes::Audio {
-                                content_type: "audio/wav".to_string(),
-                                done: false,
-                            })?
-                            .into(),
-                        ))?;
+                        if chunk.contains(['.', '!', '?']) {
+                            let sentence = sentence_buffer.trim().to_string();
+                            if !sentence.is_empty() {
+                                let tts_result =
+                                    interface_config.tts_interface.generate_audio(chunk).await?;
 
-                        tx_out.send(AggregatedMessage::Binary(tts_result))?;
+                                send_audio(&tx_out, Some(tts_result), false)?;
+
+                                sentence_buffer.clear();
+                            }
+                        }
                     }
 
-                    tx_out.send(AggregatedMessage::Text(
-                        serde_json::to_string(&ResponseOpCodes::Audio {
-                            content_type: "audio/wav".to_string(),
-                            done: true,
-                        })?
-                        .into(),
-                    ))?;
+                    send_text(&tx_out, "", false)?;
+
+                    if !sentence_buffer.is_empty() {
+                        let tts_result = interface_config
+                            .tts_interface
+                            .generate_audio(sentence_buffer.trim().to_string())
+                            .await?;
+
+                        send_audio(&tx_out, Some(tts_result), true)?;
+                    } else {
+                        send_audio(&tx_out, None, true)?
+                    }
 
                     debug!("Tts finished");
                 }
@@ -195,6 +205,42 @@ pub async fn run(
             },
         }
     }
+
+    Ok(())
+}
+
+fn send_audio(
+    tx_out: &mpsc::UnboundedSender<AggregatedMessage>,
+    audio: Option<Bytes>,
+    done: bool,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    tx_out.send(AggregatedMessage::Text(
+        serde_json::to_string(&ResponseOpCodes::Audio {
+            content_type: "audio/wav".to_string(),
+            done,
+        })?
+        .into(),
+    ))?;
+
+    if let Some(audio_data) = audio {
+        tx_out.send(AggregatedMessage::Binary(audio_data))?;
+    }
+
+    Ok(())
+}
+
+fn send_text(
+    tx_out: &mpsc::UnboundedSender<AggregatedMessage>,
+    text: &str,
+    done: bool,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    tx_out.send(AggregatedMessage::Text(
+        serde_json::to_string(&ResponseOpCodes::Text {
+            text: text.to_owned(),
+            done,
+        })?
+        .into(),
+    ))?;
 
     Ok(())
 }
