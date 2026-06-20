@@ -22,15 +22,13 @@ pub async fn run(
     let mut last_op_code: Option<RequestOpCodes> = None;
     let mut system_prompt_type = SystemPromptType::EasyLanguage;
     let mut stt_handle = None;
-    let mut ocr_handle = None;
+    let mut ocr_handle;
 
     loop {
         let msg = tokio::select! {
             msg = rx_in.recv() => msg,
             _ = abort_rx.recv() => {
                 debug!("Pipeline abort received");
-                stt_handle = None;
-                ocr_handle = None;
                 continue;
             }
         };
@@ -136,7 +134,6 @@ pub async fn run(
                             tokio::select! {
                                 result = h => result??,
                                 _ = abort_rx.recv() => {
-                                    ocr_handle = None;
                                     continue;
                                 }
                             }
