@@ -17,5 +17,5 @@ pub enum RequestOpCodes {
 pub enum ResponseOpCodes {
     Audio { content_type: String, done: bool },
     Error { error_message: String },
-    Text { text: String },
+    Text { text: String, done: bool },
 }

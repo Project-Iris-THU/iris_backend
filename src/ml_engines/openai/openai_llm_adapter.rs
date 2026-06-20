@@ -67,23 +67,13 @@ impl LlmInterface for OpenAiLlmAdapter {
             .create_stream(request)
             .await?;
 
-        let mut sentence_buffer = String::new();
-
         while let Some(result) = stream.next().await {
             match result {
                 Ok(response_event) => match &response_event {
                     ResponseStreamEvent::ResponseOutputTextDelta(delta) => {
-                        let text = &delta.delta;
+                        let text = delta.delta.clone();
 
-                        sentence_buffer.push_str(text);
-
-                        if text.contains(['.', '!', '?']) {
-                            let sentence = sentence_buffer.trim().to_string();
-                            if !sentence.is_empty() {
-                                output_channel.send(sentence).await?;
-                                sentence_buffer.clear();
-                            }
-                        }
+                        output_channel.send(text).await?;
                     }
                     _ => {
                         debug!("\n{}: skipping\n", response_event.event_type());
@@ -93,12 +83,6 @@ impl LlmInterface for OpenAiLlmAdapter {
                     error!("\n{e:#?}");
                 }
             }
-        }
-
-        if !sentence_buffer.is_empty() {
-            let _ = output_channel
-                .send(sentence_buffer.trim().to_string())
-                .await?;
         }
 
         Ok(())
