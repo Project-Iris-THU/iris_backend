@@ -51,28 +51,13 @@ impl LlmInterface for OllamaLlmAdapter {
 
         let mut stream = self.ollama_client.generate_stream(request).await?;
 
-        let mut sentence_buffer = String::new();
-
         while let Some(res) = stream.next().await {
             let chunks = res?;
             for ele in chunks {
-                let text = &ele.response;
-                sentence_buffer.push_str(text);
+                let text = ele.response;
 
-                if text.contains(['.', '!', '?']) {
-                    let sentence = sentence_buffer.trim().to_string();
-                    if !sentence.is_empty() {
-                        output_channel.send(sentence).await?;
-                        sentence_buffer.clear();
-                    }
-                }
+                output_channel.send(text).await?;
             }
-        }
-
-        if !sentence_buffer.is_empty() {
-            let _ = output_channel
-                .send(sentence_buffer.trim().to_string())
-                .await?;
         }
 
         Ok(())
