@@ -2,12 +2,15 @@ use crate::data::config::LlmConfig;
 use crate::data::ml_engines::SystemPromptType;
 use crate::ml_engines::helper_functions::system_prompts::match_system_prompt_type;
 use crate::ml_engines::interfaces::llm_interface::LlmInterface;
-use async_openai::traits::EventType;
-use async_openai::types::responses::ResponseStreamEvent;
-use async_openai::{Client, config::OpenAIConfig, types::responses::CreateResponseArgs};
+use async_openai::types::chat::{
+    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestSystemMessageContent, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequestArgs,
+};
+use async_openai::{Client, config::OpenAIConfig};
 use async_trait::async_trait;
 use futures_util::StreamExt;
-use log::{debug, error};
+use log::error;
 use std::error::Error;
 use tokio::sync::mpsc::Sender;
 
@@ -26,18 +29,34 @@ impl LlmInterface for OpenAiLlmAdapter {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
-        let request = CreateResponseArgs::default()
-            .model(self.config.model.clone())
-            .prompt(system_prompt)
-            .input(prompt)
+        let system_message = ChatCompletionRequestSystemMessageArgs::default()
+            .content(ChatCompletionRequestSystemMessageContent::from(
+                system_prompt,
+            ))
             .build()?;
 
-        let response = self.openai_client.responses().create(request).await?;
+        let user_message = ChatCompletionRequestUserMessageArgs::default()
+            .content(vec![
+                ChatCompletionRequestMessageContentPartText::from(prompt).into(),
+            ])
+            .build()?;
 
-        let output_text = match response.output_text() {
-            Some(text) => text,
-            None => return Err("No output text found in response".into()),
-        };
+        let mut request_args = CreateChatCompletionRequestArgs::default();
+
+        self.set_options_from_config(&mut request_args);
+
+        let request = request_args
+            .model(self.config.model.clone())
+            .messages([system_message.into(), user_message.into()])
+            .build()?;
+
+        let response = self.openai_client.chat().create(request).await?;
+
+        let output_text = response
+            .choices
+            .first()
+            .and_then(|choice| choice.message.content.clone())
+            .ok_or("No output text found in response")?;
 
         Ok(output_text)
     }
@@ -51,34 +70,40 @@ impl LlmInterface for OpenAiLlmAdapter {
         let system_prompt =
             match_system_prompt_type(system_prompt_type, &self.config.system_prompts);
 
-        let mut request_args = CreateResponseArgs::default();
+        let system_message = ChatCompletionRequestSystemMessageArgs::default()
+            .content(ChatCompletionRequestSystemMessageContent::from(
+                system_prompt,
+            ))
+            .build()?;
+
+        let user_message = ChatCompletionRequestUserMessageArgs::default()
+            .content(vec![
+                ChatCompletionRequestMessageContentPartText::from(prompt).into(),
+            ])
+            .build()?;
+
+        let mut request_args = CreateChatCompletionRequestArgs::default();
 
         self.set_options_from_config(&mut request_args);
 
         let request = request_args
             .model(self.config.model.clone())
-            .prompt(system_prompt)
-            .input(prompt)
+            .messages([system_message.into(), user_message.into()])
             .build()?;
 
-        let mut stream = self
-            .openai_client
-            .responses()
-            .create_stream(request)
-            .await?;
+        let mut stream = self.openai_client.chat().create_stream(request).await?;
 
         while let Some(result) = stream.next().await {
             match result {
-                Ok(response_event) => match &response_event {
-                    ResponseStreamEvent::ResponseOutputTextDelta(delta) => {
-                        let text = delta.delta.clone();
+                Ok(response_event) => {
+                    let text = response_event
+                        .choices
+                        .first()
+                        .and_then(|choice| choice.delta.content.clone())
+                        .ok_or("No output text found in response")?;
 
-                        output_channel.send(text).await?;
-                    }
-                    _ => {
-                        debug!("\n{}: skipping\n", response_event.event_type());
-                    }
-                },
+                    output_channel.send(text).await?;
+                }
                 Err(e) => {
                     error!("\n{e:#?}");
                 }
@@ -97,7 +122,7 @@ impl OpenAiLlmAdapter {
         }
     }
 
-    fn set_options_from_config(&self, args: &mut CreateResponseArgs) {
+    fn set_options_from_config(&self, args: &mut CreateChatCompletionRequestArgs) {
         if let Some(temp) = self.config.temperature {
             args.temperature(temp);
         };
