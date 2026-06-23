@@ -16,6 +16,7 @@ const BUFFER_SIZE: usize = 1024;
 pub async fn run(
     mut rx_in: mpsc::UnboundedReceiver<PipelineInputData>,
     tx_out: mpsc::UnboundedSender<AggregatedMessage>,
+    mut abort_rx: mpsc::UnboundedReceiver<()>,
     interface_config: Arc<InterfaceConfig>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut last_op_code: Option<RequestOpCodes> = None;
@@ -23,7 +24,20 @@ pub async fn run(
     let mut stt_handle = None;
     let mut ocr_handle;
 
-    while let Some(msg) = rx_in.recv().await {
+    loop {
+        let msg = tokio::select! {
+            msg = rx_in.recv() => msg,
+            _ = abort_rx.recv() => {
+                debug!("Pipeline abort received");
+                continue;
+            }
+        };
+
+        let msg = match msg {
+            Some(msg) => msg,
+            None => break,
+        };
+
         match msg {
             PipelineInputData::RequestOpCodes(op_code) => {
                 match op_code {
@@ -115,21 +129,31 @@ pub async fn run(
 
                     debug!("Pipeline start");
 
-                    let transcription_text = if let Some(h) = stt_handle {
-                        h.await??
-                    } else {
-                        String::from("")
+                    let transcription_text = match stt_handle.take() {
+                        Some(h) => {
+                            tokio::select! {
+                                result = h => result??,
+                                _ = abort_rx.recv() => {
+                                    continue;
+                                }
+                            }
+                        }
+                        None => String::from(""),
                     };
                     debug!("STT finished");
 
-                    let ocr_text = if let Some(h) = ocr_handle {
-                        h.await??
-                    } else {
-                        String::from("")
+                    let ocr_text = match ocr_handle.take() {
+                        Some(h) => {
+                            tokio::select! {
+                                result = h => result??,
+                                _ = abort_rx.recv() => {
+                                    continue;
+                                }
+                            }
+                        }
+                        None => String::from(""),
                     };
                     debug!("OCR finished");
-
-                    stt_handle = None;
 
                     let llm_input_text =
                         format!("Ocr result: {ocr_text}\n User command: {transcription_text}");
@@ -155,8 +179,23 @@ pub async fn run(
                     debug!("Llm finished");
 
                     let mut sentence_buffer = String::new();
+                    let mut tts_aborted = false;
 
-                    while let Some(chunk) = tts_in_channel.recv().await {
+                    loop {
+                        let chunk = tokio::select! {
+                            chunk = tts_in_channel.recv() => chunk,
+                            _ = abort_rx.recv() => {
+                                debug!("Pipeline abort during TTS");
+                                tts_aborted = true;
+                                break;
+                            }
+                        };
+
+                        let chunk = match chunk {
+                            Some(chunk) => chunk,
+                            None => break,
+                        };
+
                         sentence_buffer.push_str(&chunk);
                         send_text(&tx_out, &chunk, false)?;
 
@@ -173,17 +212,17 @@ pub async fn run(
                         }
                     }
 
-                    send_text(&tx_out, "", false)?;
+                    if !tts_aborted {
+                        if !sentence_buffer.is_empty() {
+                            let tts_result = interface_config
+                                .tts_interface
+                                .generate_audio(sentence_buffer.trim().to_string())
+                                .await?;
 
-                    if !sentence_buffer.is_empty() {
-                        let tts_result = interface_config
-                            .tts_interface
-                            .generate_audio(sentence_buffer.trim().to_string())
-                            .await?;
-
-                        send_audio(&tx_out, Some(tts_result), true)?;
-                    } else {
-                        send_audio(&tx_out, None, true)?
+                            send_audio(&tx_out, Some(tts_result), true)?;
+                        } else {
+                            send_audio(&tx_out, None, true)?
+                        }
                     }
 
                     debug!("Tts finished");

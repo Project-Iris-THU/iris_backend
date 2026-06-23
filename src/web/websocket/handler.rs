@@ -17,10 +17,10 @@ async fn websocket_handler(
     let (res, mut session, stream) = actix_ws::handle(&req, stream)?;
 
     let (tx_in, rx_in) = mpsc::unbounded_channel::<PipelineInputData>();
-
     let (tx_out, mut rx_out) = mpsc::unbounded_channel::<AggregatedMessage>();
+    let (abort_tx, abort_rx) = mpsc::unbounded_channel::<()>();
 
-    tokio::spawn(async move { run(rx_in, tx_out, data.interfaces.clone()).await });
+    tokio::spawn(async move { run(rx_in, tx_out, abort_rx, data.interfaces.clone()).await });
 
     let mut stream = stream
         .max_frame_size(2_usize.pow(25))
@@ -53,7 +53,7 @@ async fn websocket_handler(
                         Ok(data) => {
                             match data {
                                 RequestOpCodes::AbortPipeline => {
-                                    todo!("Abort pipeline");
+                                    let _ = abort_tx.send(());
                                 }
                                 _ => {
                                     tx_in.send(PipelineInputData::RequestOpCodes(data)).unwrap();
