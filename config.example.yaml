@@ -82,4 +82,5 @@ pipeline_configs:
   tts:
     model: "qwen3-tts"
     engine_name: my-openai
+    voice: "ryan"
     enabled: true

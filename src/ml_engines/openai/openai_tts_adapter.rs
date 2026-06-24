@@ -2,7 +2,7 @@ use crate::data::config::TtsConfig;
 use crate::ml_engines::interfaces::tts_interface::TtsInterface;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
-use async_openai::types::audio::{CreateSpeechRequestArgs, SpeechModel};
+use async_openai::types::audio::{CreateSpeechRequestArgs, SpeechModel, Voice};
 use async_trait::async_trait;
 use bytes::Bytes;
 use std::error::Error;
@@ -18,6 +18,7 @@ impl TtsInterface for OpenAiTtsAdapter {
         let request = CreateSpeechRequestArgs::default()
             .input(text)
             .model(SpeechModel::Other(self.config.model.clone()))
+            .voice(Voice::Other(self.config.voice.clone()))
             .build()?;
 
         let response = self.openai_client.audio().speech().create(request).await?;

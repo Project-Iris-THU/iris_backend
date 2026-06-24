@@ -146,11 +146,14 @@ pub fn load_config_file<R: Read>(
 
             let engine_name = get_string_from_value(tts_config, "engine_name")?;
 
+            let voice = get_string_from_value(tts_config, "voice")?;
+
             let enabled = get_bool_from_value(tts_config, "enabled")?;
 
             config_data.pipeline_configs.tts = TtsConfig {
                 model,
                 engine_name,
+                voice,
                 enabled,
             };
         }
@@ -309,6 +312,7 @@ pipeline_configs:
   tts:
     model: "qwen3-tts"
     engine_name: my-openai
+    voice: "ryan"
     enabled: true
         "#;
 
@@ -400,6 +404,7 @@ pipeline_configs:
 
         assert_eq!(config_data.pipeline_configs.tts.model, "qwen3-tts");
         assert_eq!(config_data.pipeline_configs.tts.engine_name, "my-openai");
+        assert_eq!(config_data.pipeline_configs.tts.voice, "ryan");
         assert_eq!(config_data.pipeline_configs.tts.enabled, true);
 
         Ok(())

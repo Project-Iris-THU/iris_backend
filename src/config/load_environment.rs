@@ -130,6 +130,11 @@ pub fn load_environment(
         &mut config_data.pipeline_configs.tts.engine_name,
     )?;
 
+    set_string_from_env(
+        "IRIS_PIPELINE_TTS_VOICE",
+        &mut config_data.pipeline_configs.tts.voice,
+    )?;
+
     set_bool_from_env(
         "IRIS_PIPELINE_TTS_ENGINE_ENABLED",
         &mut config_data.pipeline_configs.tts.enabled,
