@@ -45,6 +45,7 @@ pub fn create_default_config_data() -> ConfigData {
             tts: TtsConfig {
                 model: "".to_string(),
                 engine_name: "".to_string(),
+                voice: "".to_owned(),
                 enabled: false,
             },
         },

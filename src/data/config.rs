@@ -61,6 +61,7 @@ pub struct LlmConfig {
 pub struct TtsConfig {
     pub model: String,
     pub engine_name: String,
+    pub voice: String,
     pub enabled: bool,
 }
 
