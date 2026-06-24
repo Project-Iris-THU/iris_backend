@@ -208,13 +208,12 @@ pub async fn run(
                             error!("{send_error}");
                         };
 
-                        if !sentence_buffer.is_empty() {
-                            if let Err(send_error) =
+                        if !sentence_buffer.is_empty()
+                            && let Err(send_error) =
                                 tts_chunk_in_channel.send(sentence_buffer).await
-                            {
-                                error!("{send_error}");
-                            };
-                        }
+                        {
+                            error!("{send_error}");
+                        };
                     });
 
                     let (tts_bytes_stream_channel_tx, mut tts_bytes_stream_channel_rx) =
