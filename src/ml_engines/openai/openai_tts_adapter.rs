@@ -18,7 +18,7 @@ impl TtsInterface for OpenAiTtsAdapter {
         let request = CreateSpeechRequestArgs::default()
             .input(text)
             .model(SpeechModel::Other(self.config.model.clone()))
-            .voice(Voice::Other("vivian".to_string()))
+            .voice(Voice::Other(self.config.voice.clone()))
             .build()?;
 
         let response = self.openai_client.audio().speech().create(request).await?;
