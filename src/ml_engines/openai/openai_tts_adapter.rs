@@ -89,7 +89,7 @@ impl OpenAiTtsAdapter {
         text: String,
         model: String,
         voice: String,
-    ) -> Result<CreateSpeechRequest, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<CreateSpeechRequest, Box<dyn Error + Send + Sync>> {
         Ok(CreateSpeechRequestArgs::default()
             .input(text)
             .model(SpeechModel::Other(model))

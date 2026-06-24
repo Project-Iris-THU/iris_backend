@@ -178,52 +178,66 @@ pub async fn run(
 
                     debug!("Llm finished");
 
-                    let mut sentence_buffer = String::new();
-                    let mut tts_aborted = false;
+                    let (tts_chunk_in_channel, mut tts_chunk_out_channel) =
+                        mpsc::channel::<String>(BUFFER_SIZE);
 
-                    loop {
-                        let chunk = tokio::select! {
-                            chunk = tts_in_channel.recv() => chunk,
-                            _ = abort_rx.recv() => {
-                                debug!("Pipeline abort during TTS");
-                                tts_aborted = true;
-                                break;
-                            }
-                        };
+                    let tx_out_clone = tx_out.clone();
+                    tokio::spawn(async move {
+                        let mut sentence_buffer = String::new();
 
-                        let chunk = match chunk {
-                            Some(chunk) => chunk,
-                            None => break,
-                        };
+                        while let Some(chunk) = tts_in_channel.recv().await {
+                            sentence_buffer.push_str(&chunk);
+                            if let Err(send_error) = send_text(&tx_out_clone, &chunk, false) {
+                                error!("{send_error}");
+                            };
 
-                        sentence_buffer.push_str(&chunk);
-                        send_text(&tx_out, &chunk, false)?;
+                            if chunk.contains(['.', '!', '?']) {
+                                let sentence = sentence_buffer.trim().to_string();
+                                if !sentence.is_empty() {
+                                    let tts_result = if let Err(send_error) =
+                                        tts_chunk_in_channel.send((chunk)).await
+                                    {
+                                        error!("{send_error}");
+                                    };
 
-                        if chunk.contains(['.', '!', '?']) {
-                            let sentence = sentence_buffer.trim().to_string();
-                            if !sentence.is_empty() {
-                                let tts_result =
-                                    interface_config.tts_interface.generate_audio(chunk).await?;
-
-                                send_audio(&tx_out, Some(tts_result), false)?;
-
-                                sentence_buffer.clear();
+                                    sentence_buffer.clear();
+                                }
                             }
                         }
-                    }
 
-                    if !tts_aborted {
+                        if let Err(send_error) = send_text(&tx_out_clone, "", true) {
+                            error!("{send_error}");
+                        };
+
                         if !sentence_buffer.is_empty() {
-                            let tts_result = interface_config
-                                .tts_interface
-                                .generate_audio(sentence_buffer.trim().to_string())
-                                .await?;
-
-                            send_audio(&tx_out, Some(tts_result), true)?;
-                        } else {
-                            send_audio(&tx_out, None, true)?
+                            if let Err(send_error) =
+                                tts_chunk_in_channel.send(sentence_buffer).await
+                            {
+                                error!("{send_error}");
+                            };
                         }
+                    });
+
+                    let (tts_bytes_stream_channel_tx, mut tts_bytes_stream_channel_rx) =
+                        mpsc::channel::<Bytes>(BUFFER_SIZE);
+
+                    let tts_interface_clone = interface_config.tts_interface.clone();
+                    tokio::spawn(async move {
+                        while let Some(chunk) = tts_chunk_out_channel.recv().await {
+                            if let Err(generation_error) = tts_interface_clone
+                                .generate_audio_stream(chunk, tts_bytes_stream_channel_tx.clone())
+                                .await
+                            {
+                                error!("{generation_error}");
+                            };
+                        }
+                    });
+
+                    while let Some(audio_bytes_steam) = tts_bytes_stream_channel_rx.recv().await {
+                        send_audio(&tx_out, Some(audio_bytes_steam), false)?;
                     }
+
+                    send_audio(&tx_out, None, true)?;
 
                     debug!("Tts finished");
                 }
