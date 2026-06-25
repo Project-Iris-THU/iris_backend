@@ -195,7 +195,8 @@ pub async fn run(
                             if chunk.contains(['.', '!', '?']) {
                                 let sentence = sentence_buffer.trim().to_string();
                                 if !sentence.is_empty() {
-                                    if let Err(send_error) = tts_chunk_in_channel.send(chunk).await
+                                    if let Err(send_error) =
+                                        tts_chunk_in_channel.send(sentence).await
                                     {
                                         error!("{send_error}");
                                     };
