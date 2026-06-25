@@ -5,7 +5,7 @@ use async_openai::config::OpenAIConfig;
 use async_openai::traits::EventType;
 use async_openai::types::audio::{
     CreateSpeechRequest, CreateSpeechRequestArgs, CreateSpeechResponseStreamEvent, SpeechModel,
-    Voice,
+    SpeechResponseFormat, Voice,
 };
 use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -93,6 +93,7 @@ impl OpenAiTtsAdapter {
             .input(text)
             .model(SpeechModel::Other(model))
             .voice(Voice::Other(voice))
+            .response_format(SpeechResponseFormat::Pcm)
             .build()?)
     }
 }

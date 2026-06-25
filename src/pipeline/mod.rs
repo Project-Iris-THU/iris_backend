@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 
 const BUFFER_SIZE: usize = 1024;
+const SAMPLE_RATE: usize = 24000;
 
 pub async fn run(
     mut rx_in: mpsc::UnboundedReceiver<PipelineInputData>,
@@ -267,7 +268,7 @@ fn send_audio(
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     tx_out.send(AggregatedMessage::Text(
         serde_json::to_string(&ResponseOpCodes::Audio {
-            content_type: "audio/wav".to_string(),
+            content_type: format!("audio/pcm; rate={SAMPLE_RATE}"),
             done,
         })?
         .into(),
