@@ -157,7 +157,7 @@ pub async fn run(
                     debug!("OCR finished");
 
                     let llm_input_text =
-                        format!("Ocr result: {ocr_text}\n User command: {transcription_text}");
+                        format!("User command: {transcription_text} \n---\nOcr result: {ocr_text}");
 
                     let (llm_out_channel, mut tts_in_channel) =
                         mpsc::channel::<String>(BUFFER_SIZE);
