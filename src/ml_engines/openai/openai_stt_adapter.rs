@@ -27,10 +27,12 @@ impl SttInterface for OpenAiSttAdapter {
             .openai_client
             .audio()
             .transcription()
-            .create(request)
+            .create_raw(request)
             .await?;
 
-        Ok(response.text)
+        let text = String::from_utf8(response.to_vec())?;
+
+        Ok(text)
     }
 }
 
