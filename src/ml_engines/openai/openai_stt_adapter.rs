@@ -2,7 +2,7 @@ use crate::data::config::SttConfig;
 use crate::ml_engines::interfaces::stt_interface::SttInterface;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
-use async_openai::types::audio::{AudioInput, CreateTranscriptionRequestArgs};
+use async_openai::types::audio::{AudioInput, AudioResponseFormat, CreateTranscriptionRequestArgs};
 use async_trait::async_trait;
 use bytes::Bytes;
 use std::error::Error;
@@ -20,6 +20,7 @@ impl SttInterface for OpenAiSttAdapter {
         let request = CreateTranscriptionRequestArgs::default()
             .model(self.config.model.clone())
             .file(audio_file)
+            .response_format(AudioResponseFormat::Text)
             .build()?;
 
         let response = self
